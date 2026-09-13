@@ -4,8 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from app.api.deps import get_db, get_current_user
 from app.models.user import User
+from app.models.document import Document
 from app.core.config import settings
 from app.core.qdrant import get_qdrant_client
 from sentence_transformers import SentenceTransformer
@@ -56,19 +58,25 @@ def chat_with_docs_stream(
             page = res.payload.get("page_number", "?")
             doc_id = res.payload.get("document_id", "")
             
-            context_text += f"\n--- Source {i+1} (Page {page}) ---\n{text}\n"
+            doc_obj = db.execute(select(Document).filter_by(id=doc_id)).scalar_one_or_none() if doc_id else None
+            doc_name = doc_obj.original_filename if doc_obj else f"Document {str(doc_id)[:6]}.pdf"
+            
+            context_text += f"\n--- Source {i+1} ({doc_name}, Page {page}) ---\n{text}\n"
             sources.append({
                 "document_id": doc_id,
+                "document_name": doc_name,
                 "page": page,
-                "score": res.score
+                "score": float(res.score) if res.score else 0.95,
+                "snippet": (text[:180].strip() + "...") if len(text) > 180 else text.strip()
             })
             
     system_prompt = "You are DocuMind AI, an intelligent assistant. Answer the user's question based strictly on the provided context from their documents. If the answer is not in the context, just say you don't know based on the provided documents. Context:\n" + context_text
 
-    # 4. Construct Messages array for Groq
+    # 4. Construct Messages array for Groq (ensuring standard OpenAI/Groq roles: system, user, assistant)
     messages_for_llm = [{"role": "system", "content": system_prompt}]
     for m in req.messages:
-        messages_for_llm.append({"role": m.role, "content": m.content})
+        role = "assistant" if m.role in ["ai", "assistant"] else "user"
+        messages_for_llm.append({"role": role, "content": m.content})
     
     # 5. Call Groq API with streaming
     headers = {
@@ -114,7 +122,7 @@ def chat_with_docs_stream(
                                     yield f"data: {json.dumps({'type': 'content', 'content': content})}\n\n"
         except Exception as e:
             print(f"LLM API Error: {e}")
-            yield f"data: {json.dumps({'type': 'error', 'content': 'Failed to communicate with LLM API.'})}\n\n"
+            yield f"data: {json.dumps({'type': 'content', 'content': f'Sorry, an error occurred while connecting to the LLM: {str(e)}'})}\n\n"
             
         yield "data: [DONE]\n\n"
         

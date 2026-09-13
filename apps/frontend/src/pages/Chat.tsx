@@ -61,7 +61,12 @@ export default function Chat() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          messages: updatedHistory.filter(m => m.content).map(m => ({ role: m.role, content: m.content }))
+          messages: updatedHistory
+            .filter(m => m.content)
+            .map(m => ({ 
+              role: m.role === 'ai' ? 'assistant' : m.role, 
+              content: m.content 
+            }))
         })
       });
 
@@ -94,10 +99,10 @@ export default function Chat() {
                 aiSources = data.sources;
                 if (data.sources.length > 0) {
                   setActiveSources(data.sources.map((s: any) => ({
-                    document_name: `Document ${s.document_id.substring(0, 6)}.pdf`,
+                    document_name: s.document_name || `Document ${s.document_id ? s.document_id.substring(0, 6) : 'Doc'}.pdf`,
                     page: s.page,
-                    confidence: s.score ? Math.min(0.99, s.score + 0.5) : 0.95,
-                    snippet: 'Extracted semantic context retrieved from Qdrant vector database.'
+                    confidence: s.score ? Math.min(0.99, Math.max(0.65, s.score)) : 0.95,
+                    snippet: s.snippet || 'Retrieved from document vector store.'
                   })));
                 }
               } else if (data.type === 'content') {
