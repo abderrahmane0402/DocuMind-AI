@@ -10,7 +10,8 @@ import {
   Menu,
   ChevronLeft,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  X
 } from 'lucide-react';
 
 import Login from './pages/Login';
@@ -21,7 +22,17 @@ import UploadCenter from './pages/UploadCenter';
 import Chat from './pages/Chat';
 import ProtectedRoute from './components/ProtectedRoute';
 
-function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed: (val: boolean) => void }) {
+function Sidebar({ 
+  collapsed, 
+  setCollapsed, 
+  isMobile = false, 
+  onCloseMobile 
+}: { 
+  collapsed: boolean; 
+  setCollapsed: (val: boolean) => void;
+  isMobile?: boolean;
+  onCloseMobile?: () => void;
+}) {
   const { logout, user } = useAuth();
 
   const navItems = [
@@ -33,19 +44,19 @@ function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed
 
   return (
     <aside 
-      className={`fixed inset-y-0 left-0 z-30 hidden lg:flex flex-col bg-slate-900 border-r border-slate-800 transition-all duration-200 select-none ${
-        collapsed ? 'w-[68px]' : 'w-[230px]'
+      className={`h-full flex flex-col bg-slate-900 border-r border-slate-800 select-none ${
+        isMobile ? 'w-[260px] shadow-2xl' : `fixed inset-y-0 left-0 z-30 hidden lg:flex transition-all duration-200 ${collapsed ? 'w-[68px]' : 'w-[230px]'}`
       }`}
     >
       {/* Brand Header */}
       <div className={`h-16 flex items-center border-b border-slate-800/80 shrink-0 relative ${
-        collapsed ? 'justify-center px-0' : 'px-4 justify-between'
+        collapsed && !isMobile ? 'justify-center px-0' : 'px-4 justify-between'
       }`}>
-        <div className={`flex items-center gap-2.5 ${collapsed ? 'justify-center' : 'overflow-hidden'}`}>
+        <div className={`flex items-center gap-2.5 ${collapsed && !isMobile ? 'justify-center' : 'overflow-hidden'}`}>
           <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/30">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
-          {!collapsed && (
+          {(!collapsed || isMobile) && (
             <div className="flex flex-col overflow-hidden">
               <span className="text-white font-bold text-sm tracking-tight truncate leading-tight">
                 DocuMind AI
@@ -57,22 +68,35 @@ function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed
           )}
         </div>
 
-        {/* Sidebar Toggle Button */}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className={`rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors hidden lg:flex items-center justify-center border border-slate-700 shadow-xs z-30 ${
-            collapsed 
-              ? 'absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6' 
-              : 'w-7 h-7'
-          }`}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
-        </button>
+        {/* Desktop Sidebar Toggle Button */}
+        {!isMobile && (
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={`rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors hidden lg:flex items-center justify-center border border-slate-700 shadow-xs z-30 ${
+              collapsed 
+                ? 'absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6' 
+                : 'w-7 h-7'
+            }`}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+          </button>
+        )}
+
+        {/* Mobile Close Button */}
+        {isMobile && onCloseMobile && (
+          <button
+            onClick={onCloseMobile}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            title="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Workspace Indicator */}
-      {!collapsed && (
+      {(!collapsed || isMobile) && (
         <div className="px-3 pt-3 pb-1">
           <div className="px-2.5 py-1.5 rounded-md bg-slate-800/50 border border-slate-700/40 flex items-center justify-between text-[11px]">
             <span className="text-slate-300 font-medium truncate">
@@ -92,28 +116,33 @@ function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={() => {
+              if (isMobile && onCloseMobile) {
+                onCloseMobile();
+              }
+            }}
             className={({ isActive }) =>
               `flex items-center h-9 px-3 rounded-lg text-xs font-medium transition-colors ${
                 isActive
                   ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 font-semibold'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-              } ${collapsed ? 'justify-center px-0' : 'gap-3'}`
+              } ${collapsed && !isMobile ? 'justify-center px-0' : 'gap-3'}`
             }
-            title={collapsed ? item.name : undefined}
+            title={collapsed && !isMobile ? item.name : undefined}
           >
             <item.icon className="w-4 h-4 shrink-0" />
-            {!collapsed && <span className="truncate">{item.name}</span>}
+            {(!collapsed || isMobile) && <span className="truncate">{item.name}</span>}
           </NavLink>
         ))}
       </nav>
 
       {/* Profile & Logout Block */}
       <div className="p-3 border-t border-slate-800/80 shrink-0">
-        <div className={`flex items-center gap-2.5 p-2 rounded-lg bg-slate-800/40 border border-slate-800/60 ${collapsed ? 'justify-center p-1.5' : ''}`}>
+        <div className={`flex items-center gap-2.5 p-2 rounded-lg bg-slate-800/40 border border-slate-800/60 ${collapsed && !isMobile ? 'justify-center p-1.5' : ''}`}>
           <div className="w-7 h-7 rounded-full bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-300 text-xs font-bold shrink-0">
             {user?.email?.charAt(0).toUpperCase() || 'U'}
           </div>
-          {!collapsed && (
+          {(!collapsed || isMobile) && (
             <div className="flex-1 overflow-hidden">
               <div className="text-xs font-medium text-slate-200 truncate leading-tight">
                 {user?.display_name || user?.email?.split('@')[0] || 'User'}
@@ -123,7 +152,7 @@ function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed
               </div>
             </div>
           )}
-          {!collapsed && (
+          {(!collapsed || isMobile) && (
             <button
               onClick={logout}
               className="p-1 text-slate-400 hover:text-red-400 rounded-md hover:bg-slate-800 transition-colors"
@@ -194,8 +223,13 @@ function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Mobile Drawer */}
-      <div className={`fixed inset-y-0 left-0 z-50 transform lg:hidden transition-transform duration-200 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <Sidebar collapsed={false} setCollapsed={() => setMobileOpen(false)} />
+      <div className={`fixed inset-y-0 left-0 z-50 transform lg:hidden transition-transform duration-200 ease-in-out ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <Sidebar 
+          collapsed={false} 
+          setCollapsed={() => {}} 
+          isMobile={true} 
+          onCloseMobile={() => setMobileOpen(false)} 
+        />
       </div>
 
       {/* Main Fluid Content */}
