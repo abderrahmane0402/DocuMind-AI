@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { API_BASE_URL } from '../config';
 import { 
   FileText, 
   CheckCircle2, 
@@ -61,8 +62,8 @@ export default function Dashboard() {
     try {
       setLoading(true);
       const [docsRes, statsRes] = await Promise.all([
-        fetch(`http://localhost:8000/api/v1/documents/?workspace_id=${wsId}`, { headers }),
-        fetch(`http://localhost:8000/api/v1/documents/stats/summary?workspace_id=${wsId}`, { headers })
+        fetch(`${API_BASE_URL}/documents/?workspace_id=${wsId}`, { headers }),
+        fetch(`${API_BASE_URL}/documents/stats/summary?workspace_id=${wsId}`, { headers })
       ]);
 
       if (docsRes.ok) {

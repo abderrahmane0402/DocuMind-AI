@@ -6,6 +6,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../config';
 
 interface UploadItem {
   id: string;
@@ -40,7 +41,7 @@ export default function UploadCenter() {
       formData.append('workspace_id', user.workspaces[0].id);
 
       try {
-        const res = await fetch('http://localhost:8000/api/v1/documents/', {
+        const res = await fetch(`${API_BASE_URL}/documents/`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: formData

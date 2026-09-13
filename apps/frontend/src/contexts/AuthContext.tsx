@@ -8,6 +8,8 @@ interface User {
   workspaces: Array<{id: string, name: string}>;
 }
 
+import { API_BASE_URL } from '../config';
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -37,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/v1/auth/me', {
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {

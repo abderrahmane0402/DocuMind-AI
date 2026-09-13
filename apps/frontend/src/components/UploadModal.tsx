@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { UploadCloud, X, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 interface UploadModalProps {
   onClose: () => void;
@@ -32,7 +33,7 @@ export default function UploadModal({ onClose, onUploadSuccess }: UploadModalPro
     formData.append('workspace_id', user.workspaces[0].id);
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/documents/', {
+      const response = await fetch(`${API_BASE_URL}/documents/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

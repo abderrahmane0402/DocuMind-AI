@@ -12,6 +12,7 @@ import {
   CheckSquare
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../config';
 
 interface DocumentItem {
   id: string;
@@ -37,7 +38,7 @@ export default function Documents() {
     if (!user || !token || !user.workspaces?.[0]) return;
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:8000/api/v1/documents/?workspace_id=${user.workspaces[0].id}`, {
+      const res = await fetch(`${API_BASE_URL}/documents/?workspace_id=${user.workspaces[0].id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -55,7 +56,7 @@ export default function Documents() {
     if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
     try {
       setDeleting(true);
-      const res = await fetch(`http://localhost:8000/api/v1/documents/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/documents/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -77,7 +78,7 @@ export default function Documents() {
     if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected document(s)?`)) return;
     try {
       setDeleting(true);
-      const res = await fetch('http://localhost:8000/api/v1/documents/batch-delete', {
+      const res = await fetch(`${API_BASE_URL}/documents/batch-delete`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

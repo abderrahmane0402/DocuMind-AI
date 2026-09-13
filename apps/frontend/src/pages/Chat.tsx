@@ -10,6 +10,7 @@ import {
   Sparkles,
   Trash2
 } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 interface Message {
   id?: string;
@@ -52,7 +53,7 @@ export default function Chat() {
   const fetchSessions = async () => {
     if (!token) return;
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/chat/sessions', {
+      const res = await fetch(`${API_BASE_URL}/chat/sessions`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -75,7 +76,7 @@ export default function Chat() {
     setIsHistoryLoading(true);
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/chat/sessions/${sessionId}/messages`, {
+      const res = await fetch(`${API_BASE_URL}/chat/sessions/${sessionId}/messages`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -118,7 +119,7 @@ export default function Chat() {
   const handleDeleteSession = async (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/chat/sessions/${sessionId}`, {
+      const res = await fetch(`${API_BASE_URL}/chat/sessions/${sessionId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -149,7 +150,7 @@ export default function Chat() {
     setMessages(prev => [...prev, { role: 'ai', content: '' }]);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/v1/chat/stream', {
+      const response = await fetch(`${API_BASE_URL}/chat/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
