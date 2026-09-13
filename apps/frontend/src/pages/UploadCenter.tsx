@@ -18,11 +18,7 @@ interface UploadItem {
 export default function UploadCenter() {
   const { user, token } = useAuth();
   const [dragActive, setDragActive] = useState(false);
-  const [queue, setQueue] = useState<UploadItem[]>([
-    { id: '1', name: 'Invoice_001.pdf', size: '2.4 MB', status: 'uploading', progress: 60 },
-    { id: '2', name: 'Contract_2024.pdf', size: '1.8 MB', status: 'processing', progress: 30 },
-    { id: '3', name: 'Receipt_0425.png', size: '512 KB', status: 'queued', progress: 0 }
-  ]);
+  const [queue, setQueue] = useState<UploadItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = async (files: FileList | null) => {
@@ -148,36 +144,45 @@ export default function UploadCenter() {
             </div>
 
             <div className="space-y-3">
-              {queue.map((item) => (
-                <div key={item.id} className="p-3 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB]/50 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      <FileText className="w-4 h-4 text-[#4F46E5] shrink-0" />
-                      <span className="font-semibold text-[#111827] truncate max-w-[140px]">{item.name}</span>
-                    </div>
-                    <span className="text-[11px] text-[#6B7280]">{item.size}</span>
-                  </div>
-
-                  {/* 6px high progress bar (Section 9.4) */}
-                  <div className="w-full bg-[#E5E7EB] rounded-full h-1.5 overflow-hidden">
-                    <div 
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                        item.status === 'completed' 
-                          ? 'bg-[#10B981]' 
-                          : item.status === 'failed' 
-                          ? 'bg-[#EF4444]' 
-                          : 'bg-[#4F46E5]'
-                      }`}
-                      style={{ width: `${item.progress}%` }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="capitalize text-[#6B7280] font-medium">{item.status}...</span>
-                    <span className="font-bold text-[#111827]">{item.progress}%</span>
-                  </div>
+              {queue.length === 0 ? (
+                <div className="py-14 text-center space-y-2">
+                  <UploadCloud className="w-8 h-8 text-slate-300 mx-auto" />
+                  <p className="text-xs font-semibold text-slate-700">Queue is empty</p>
+                  <p className="text-[11px] text-slate-400 max-w-[220px] mx-auto leading-relaxed">
+                    Select or drag documents into the drop zone to begin processing.
+                  </p>
                 </div>
-              ))}
+              ) : (
+                queue.map((item) => (
+                  <div key={item.id} className="p-3 rounded-lg border border-slate-200 bg-slate-50/50 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
+                        <span className="font-semibold text-slate-900 truncate max-w-[140px]">{item.name}</span>
+                      </div>
+                      <span className="text-[11px] text-slate-500">{item.size}</span>
+                    </div>
+
+                    <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                      <div 
+                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                          item.status === 'completed' 
+                            ? 'bg-emerald-500' 
+                            : item.status === 'failed' 
+                            ? 'bg-red-500' 
+                            : 'bg-indigo-600'
+                        }`}
+                        style={{ width: `${item.progress}%` }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="capitalize text-slate-600 font-medium">{item.status}...</span>
+                      <span className="font-bold text-slate-900">{item.progress}%</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

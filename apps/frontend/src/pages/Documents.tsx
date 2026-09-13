@@ -252,7 +252,9 @@ export default function Documents() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-[#6B7280]">Sarah Johnson</td>
+                    <td className="px-4 py-3 text-slate-500">
+                      {user?.display_name || user?.email?.split('@')[0] || 'Admin'}
+                    </td>
                     <td className="px-4 py-3 text-[#6B7280]">
                       {new Date(doc.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </td>

@@ -7,7 +7,6 @@ import {
   Loader2, 
   FileText, 
   Plus, 
-  ExternalLink,
   MessageSquare,
   Sparkles
 } from 'lucide-react';
@@ -28,10 +27,7 @@ export default function Chat() {
       sources: []
     }
   ]);
-  const [activeSources, setActiveSources] = useState<any[]>([
-    { document_name: 'INV-2024-00123.pdf', page: 1, confidence: 0.98, snippet: 'Total amount for Invoice INV-2024-00123 is USD 3,025.00 due on June 17, 2024.' },
-    { document_name: 'Contract_Acme_2024.pdf', page: 3, confidence: 0.94, snippet: 'Section 4.2 Payment Terms: Net 30 days upon invoice receipt.' }
-  ]);
+  const [activeSources, setActiveSources] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -140,27 +136,31 @@ export default function Chat() {
       {/* Panel 1: Conversation List (Section 9.7: 260px) */}
       <div className="hidden xl:flex w-[260px] bg-white rounded-xl border border-[#E5E7EB] p-4 flex-col justify-between shrink-0 shadow-xs">
         <div className="space-y-3">
-          <button className="w-full h-9 bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-xs">
+          <button 
+            onClick={() => {
+              setMessages([
+                { 
+                  role: 'ai', 
+                  content: 'Hello! Ask me any question about your uploaded contracts, invoices, and documents. I retrieve factual answers and cite exact pages.',
+                  sources: []
+                }
+              ]);
+              setActiveSources([]);
+            }}
+            className="w-full h-9 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-xs"
+          >
             <Plus className="w-4 h-4" />
             <span>New Chat</span>
           </button>
 
-          <div className="pt-2 text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">
-            Recent Conversations
+          <div className="pt-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            Conversations
           </div>
 
           <div className="space-y-1">
-            <button className="w-full text-left p-2.5 rounded-lg bg-[#EEF2FF] text-[#4F46E5] font-medium text-xs flex items-center gap-2">
-              <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">Invoice Total & Terms</span>
-            </button>
-            <button className="w-full text-left p-2.5 rounded-lg hover:bg-[#F9FAFB] text-[#6B7280] font-medium text-xs flex items-center gap-2 transition-colors">
-              <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">Acme Contract Clause 4</span>
-            </button>
-            <button className="w-full text-left p-2.5 rounded-lg hover:bg-[#F9FAFB] text-[#6B7280] font-medium text-xs flex items-center gap-2 transition-colors">
-              <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">Q1 Expenses Summary</span>
+            <button className="w-full text-left p-2.5 rounded-lg bg-indigo-50/80 text-indigo-700 font-medium text-xs flex items-center gap-2 border border-indigo-100">
+              <MessageSquare className="w-3.5 h-3.5 shrink-0 text-indigo-600" />
+              <span className="truncate">Current Session</span>
             </button>
           </div>
         </div>
@@ -272,32 +272,41 @@ export default function Chat() {
           </span>
         </div>
 
-        <div className="space-y-4">
-          {activeSources.map((source, i) => (
-            <div key={i} className="p-3.5 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB]/60 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 overflow-hidden">
-                  <FileText className="w-4 h-4 text-[#4F46E5] shrink-0" />
-                  <span className="text-xs font-bold text-[#111827] truncate">{source.document_name}</span>
-                </div>
-                <span className="text-[11px] font-semibold text-[#10B981] bg-[#ECFDF5] px-1.5 py-0.5 rounded">
-                  {Math.round(source.confidence * 100)}%
-                </span>
-              </div>
-
-              <p className="text-xs leading-relaxed text-[#6B7280] bg-white p-2.5 rounded-lg border border-[#E5E7EB]">
-                "{source.snippet}"
+        <div className="space-y-3">
+          {activeSources.length === 0 ? (
+            <div className="py-16 text-center space-y-2">
+              <FileText className="w-8 h-8 text-slate-300 mx-auto" />
+              <p className="text-xs font-semibold text-slate-700">No citations yet</p>
+              <p className="text-[11px] text-slate-400 max-w-[200px] mx-auto leading-relaxed">
+                Ask a question to see grounded source snippets and confidence scores here.
               </p>
-
-              <div className="flex items-center justify-between text-[11px] pt-1">
-                <span className="text-[#9CA3AF]">Page {source.page}</span>
-                <button className="text-[#4F46E5] hover:underline font-semibold flex items-center gap-1">
-                  <span>Open in viewer</span>
-                  <ExternalLink className="w-3 h-3" />
-                </button>
-              </div>
             </div>
-          ))}
+          ) : (
+            activeSources.map((source, i) => (
+              <div key={i} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <span className="text-xs font-bold text-slate-900 truncate">{source.document_name}</span>
+                  </div>
+                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                    {Math.round(source.confidence * 100)}%
+                  </span>
+                </div>
+
+                <p className="text-xs leading-relaxed text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200">
+                  "{source.snippet}"
+                </p>
+
+                <div className="flex items-center justify-between text-[11px] pt-1">
+                  <span className="text-slate-400 font-medium">Page {source.page}</span>
+                  <span className="text-indigo-600 font-semibold text-[11px]">
+                    Verified Chunk
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
