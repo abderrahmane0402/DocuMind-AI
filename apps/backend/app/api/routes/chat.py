@@ -14,10 +14,15 @@ from app.models.chat_session import ChatSession, ChatMessage
 from app.db.session import SessionLocal
 from app.core.config import settings
 from app.core.qdrant import get_qdrant_client
-from sentence_transformers import SentenceTransformer
+# Embedding model lazy loader
+_embed_model = None
 
-# Load embedding model globally (cached)
-embed_model = SentenceTransformer('all-MiniLM-L6-v2')
+def get_embed_model():
+    global _embed_model
+    if _embed_model is None:
+        from sentence_transformers import SentenceTransformer
+        _embed_model = SentenceTransformer('all-MiniLM-L6-v2')
+    return _embed_model
 
 router = APIRouter()
 
@@ -177,6 +182,7 @@ def chat_with_docs_stream(
 
     # 3. Search Qdrant for semantic context
     latest_query = latest_user_message.content
+    embed_model = get_embed_model()
     query_vector = embed_model.encode(latest_query).tolist()
     
     qdrant = get_qdrant_client()

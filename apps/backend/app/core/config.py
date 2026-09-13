@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     QDRANT_PORT: int = 6333
     QDRANT_COLLECTION: str = "documind_chunks"
     
-    GROQ_API_KEY: str
+    GROQ_API_KEY: str = "gsk_test_mock_key"
     
     @property
     def redis_url(self) -> str:
