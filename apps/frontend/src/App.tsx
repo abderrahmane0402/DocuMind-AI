@@ -38,9 +38,11 @@ function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed
       }`}
     >
       {/* Brand Header */}
-      <div className="h-15 px-4 flex items-center justify-between border-b border-slate-800/80 shrink-0">
-        <div className="flex items-center gap-2.5 overflow-hidden">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/30">
+      <div className={`h-16 flex items-center border-b border-slate-800/80 shrink-0 relative ${
+        collapsed ? 'justify-center px-0' : 'px-4 justify-between'
+      }`}>
+        <div className={`flex items-center gap-2.5 ${collapsed ? 'justify-center' : 'overflow-hidden'}`}>
+          <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/30">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           {!collapsed && (
@@ -54,12 +56,18 @@ function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed
             </div>
           )}
         </div>
+
+        {/* Sidebar Toggle Button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors hidden lg:block"
+          className={`rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors hidden lg:flex items-center justify-center border border-slate-700 shadow-xs z-30 ${
+            collapsed 
+              ? 'absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6' 
+              : 'w-7 h-7'
+          }`}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
         </button>
       </div>
 
