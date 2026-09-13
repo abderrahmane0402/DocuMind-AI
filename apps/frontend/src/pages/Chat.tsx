@@ -296,23 +296,23 @@ export default function Chat() {
         
         {/* Chat Canvas Header */}
         <div className="h-14 px-6 border-b border-[#E5E7EB] flex items-center justify-between shrink-0 bg-[#F9FAFB]/50">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
               <Sparkles className="w-4 h-4" />
             </div>
-            <div>
+            <div className="truncate">
               <h2 className="text-sm font-bold text-[#111827] leading-none">RAG Assistant</h2>
-              <span className="text-[11px] text-[#6B7280]">Powered by Groq Qwen-3.8-27B & Qdrant</span>
+              <span className="text-[10px] sm:text-[11px] text-[#6B7280] truncate block">Powered by Groq Qwen-3.8-27B & Qdrant</span>
             </div>
           </div>
-          <div className="text-xs text-[#10B981] font-semibold flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+          <div className="hidden sm:flex text-xs text-[#10B981] font-semibold items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 shrink-0">
             <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-            Vector Context Ready
+            Vector Ready
           </div>
         </div>
 
         {/* Message Stream */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+        <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
           {isHistoryLoading ? (
             <div className="h-full flex items-center justify-center text-slate-400 gap-2 text-sm">
               <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />

@@ -33,7 +33,7 @@ function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed
 
   return (
     <aside 
-      className={`fixed inset-y-0 left-0 z-30 flex flex-col bg-slate-900 border-r border-slate-800 transition-all duration-200 select-none ${
+      className={`fixed inset-y-0 left-0 z-30 hidden lg:flex flex-col bg-slate-900 border-r border-slate-800 transition-all duration-200 select-none ${
         collapsed ? 'w-[68px]' : 'w-[230px]'
       }`}
     >
@@ -201,7 +201,7 @@ function Layout({ children }: { children: React.ReactNode }) {
       {/* Main Fluid Content */}
       <div className={`flex-1 flex flex-col min-w-0 transition-all duration-200 ${collapsed ? 'lg:pl-[68px]' : 'lg:pl-[230px]'}`}>
         <TopBar onOpenMobileMenu={() => setMobileOpen(true)} />
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 overflow-y-auto">
           {children}
         </main>
       </div>
