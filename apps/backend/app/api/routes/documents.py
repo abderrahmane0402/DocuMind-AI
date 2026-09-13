@@ -206,8 +206,8 @@ def get_workspace_document_stats(
     docs = db.execute(select(Document).filter_by(workspace_id=workspace_id)).scalars().all()
     
     total = len(docs)
-    completed = sum(1 for d in docs if d.status == "completed")
-    processing = sum(1 for d in docs if d.status == "processing")
+    completed = sum(1 for d in docs if d.status in ["ready", "completed"])
+    processing = sum(1 for d in docs if d.status in ["processing", "extracting_text", "embedding_text", "uploaded"])
     needs_review = sum(1 for d in docs if d.status in ["failed", "needs_review"])
     total_bytes = sum(d.file_size_bytes or 0 for d in docs)
     

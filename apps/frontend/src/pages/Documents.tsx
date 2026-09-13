@@ -135,7 +135,16 @@ export default function Documents() {
 
   const filtered = displayDocs.filter(d => {
     const matchesSearch = d.original_filename.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || d.status === statusFilter;
+    
+    let matchesStatus = true;
+    if (statusFilter === 'ready' || statusFilter === 'completed') {
+      matchesStatus = d.status === 'ready' || d.status === 'completed';
+    } else if (statusFilter === 'processing') {
+      matchesStatus = ['processing', 'extracting_text', 'embedding_text', 'uploaded'].includes(d.status);
+    } else if (statusFilter !== 'all') {
+      matchesStatus = d.status === statusFilter;
+    }
+
     const docType = getType(d.mime_type, d.original_filename).toLowerCase();
     const matchesType = typeFilter === 'all' || docType === typeFilter.toLowerCase();
     return matchesSearch && matchesStatus && matchesType;
@@ -210,7 +219,7 @@ export default function Documents() {
             className="h-9 px-3 bg-[#F9FAFB] border border-[#D1D5DB] rounded-lg text-[13px] text-[#111827] focus:outline-none focus:border-[#4F46E5]"
           >
             <option value="all">All Statuses</option>
-            <option value="completed">Completed</option>
+            <option value="ready">Ready / Completed</option>
             <option value="processing">Processing</option>
             <option value="needs_review">Needs Review</option>
             <option value="failed">Failed</option>
@@ -317,16 +326,16 @@ export default function Documents() {
                       {typeLabel}
                     </td>
                     <td className="px-4 py-3">
-                      {doc.status === 'completed' && (
+                      {(doc.status === 'ready' || doc.status === 'completed') && (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#ECFDF5] text-[#10B981] border border-[#10B981]/20">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-                          Completed
+                          Ready
                         </span>
                       )}
-                      {doc.status === 'processing' && (
+                      {(doc.status === 'processing' || doc.status === 'extracting_text' || doc.status === 'embedding_text' || doc.status === 'uploaded') && (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#EFF6FF] text-[#3B82F6] border border-[#3B82F6]/20">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] animate-ping" />
-                          Processing {doc.progress ? `(${doc.progress}%)` : ''}
+                          {doc.status === 'extracting_text' ? 'Extracting Text' : doc.status === 'embedding_text' ? 'Embedding' : 'Processing'} {doc.progress ? `(${Math.round(doc.progress * 100)}%)` : ''}
                         </span>
                       )}
                       {doc.status === 'needs_review' && (
@@ -339,6 +348,12 @@ export default function Documents() {
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FEF2F2] text-[#EF4444] border border-[#EF4444]/20">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444]" />
                           Failed
+                        </span>
+                      )}
+                      {!['ready', 'completed', 'processing', 'extracting_text', 'embedding_text', 'uploaded', 'needs_review', 'failed'].includes(doc.status) && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 capitalize">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                          {doc.status || 'Uploaded'}
                         </span>
                       )}
                     </td>
