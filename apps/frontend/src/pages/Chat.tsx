@@ -5,7 +5,6 @@ import {
   Bot, 
   User as UserIcon, 
   Loader2, 
-  FileText, 
   Plus, 
   MessageSquare,
   Sparkles
@@ -14,7 +13,6 @@ import {
 interface Message {
   role: 'user' | 'ai';
   content: string;
-  sources?: { document_id: string; page: number; score: number }[];
 }
 
 export default function Chat() {
@@ -23,11 +21,9 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([
     { 
       role: 'ai', 
-      content: 'Hello! Ask me any question about your uploaded contracts, invoices, and documents. I retrieve factual answers and cite exact pages.',
-      sources: []
+      content: 'Hello! Ask me any question about your uploaded contracts, invoices, and documents.'
     }
   ]);
-  const [activeSources, setActiveSources] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -51,7 +47,7 @@ export default function Chat() {
     setIsLoading(true);
 
     // AI placeholder
-    setMessages(prev => [...prev, { role: 'ai', content: '', sources: [] }]);
+    setMessages(prev => [...prev, { role: 'ai', content: '' }]);
 
     try {
       const response = await fetch('http://127.0.0.1:8000/api/v1/chat/stream', {
@@ -75,7 +71,6 @@ export default function Chat() {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let aiContent = '';
-      let aiSources: any[] = [];
 
       while (reader) {
         const { done, value } = await reader.read();
@@ -95,29 +90,17 @@ export default function Chat() {
 
             try {
               const data = JSON.parse(dataStr);
-              if (data.type === 'sources') {
-                aiSources = data.sources;
-                if (data.sources.length > 0) {
-                  setActiveSources(data.sources.map((s: any) => ({
-                    document_name: s.document_name || `Document ${s.document_id ? s.document_id.substring(0, 6) : 'Doc'}.pdf`,
-                    page: s.page,
-                    confidence: s.score ? Math.min(0.99, Math.max(0.65, s.score)) : 0.95,
-                    snippet: s.snippet || 'Retrieved from document vector store.'
-                  })));
-                }
-              } else if (data.type === 'content') {
+              if (data.type === 'content') {
                 aiContent += data.content;
+                setMessages(prev => {
+                  const next = [...prev];
+                  next[next.length - 1] = {
+                    role: 'ai',
+                    content: aiContent
+                  };
+                  return next;
+                });
               }
-
-              setMessages(prev => {
-                const next = [...prev];
-                next[next.length - 1] = {
-                  role: 'ai',
-                  content: aiContent,
-                  sources: aiSources
-                };
-                return next;
-              });
             } catch (err) {
               console.error(err);
             }
@@ -146,11 +129,9 @@ export default function Chat() {
               setMessages([
                 { 
                   role: 'ai', 
-                  content: 'Hello! Ask me any question about your uploaded contracts, invoices, and documents. I retrieve factual answers and cite exact pages.',
-                  sources: []
+                  content: 'Hello! Ask me any question about your uploaded contracts, invoices, and documents.'
                 }
               ]);
-              setActiveSources([]);
             }}
             className="w-full h-9 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-xs"
           >
@@ -222,18 +203,6 @@ export default function Chat() {
                     ) : '')}
                   </p>
                 </div>
-
-                {/* Inline Citation Chips */}
-                {m.sources && m.sources.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    {m.sources.map((s, i) => (
-                      <span key={i} className="inline-flex items-center gap-1.5 text-xs font-semibold bg-[#F9FAFB] text-[#4F46E5] border border-[#E5E7EB] px-2.5 py-1 rounded-lg hover:bg-[#EEF2FF] cursor-pointer transition-colors">
-                        <FileText className="w-3.5 h-3.5" />
-                        Page {s.page}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {m.role === 'user' && (
@@ -266,57 +235,10 @@ export default function Chat() {
             </button>
           </form>
           <div className="text-[11px] text-[#9CA3AF] text-center mt-2">
-            Answers are grounded strictly in retrieved vector chunks.
+            Answers are grounded strictly in your uploaded documents.
           </div>
         </div>
 
-      </div>
-
-      {/* Panel 3: Sources Evidence Panel (Compact 280px) */}
-      <div className="hidden lg:flex w-[280px] bg-white rounded-xl border border-[#E5E7EB] p-4 flex-col shrink-0 shadow-xs overflow-y-auto">
-        <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB] mb-4">
-          <h3 className="text-sm font-bold text-[#111827]">Sources & Evidence</h3>
-          <span className="text-[11px] font-semibold text-[#4F46E5] bg-[#EEF2FF] px-2 py-0.5 rounded">
-            {activeSources.length} Citations
-          </span>
-        </div>
-
-        <div className="space-y-3">
-          {activeSources.length === 0 ? (
-            <div className="py-16 text-center space-y-2">
-              <FileText className="w-8 h-8 text-slate-300 mx-auto" />
-              <p className="text-xs font-semibold text-slate-700">No citations yet</p>
-              <p className="text-[11px] text-slate-400 max-w-[200px] mx-auto leading-relaxed">
-                Ask a question to see grounded source snippets and confidence scores here.
-              </p>
-            </div>
-          ) : (
-            activeSources.map((source, i) => (
-              <div key={i} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 overflow-hidden">
-                    <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
-                    <span className="text-xs font-bold text-slate-900 truncate">{source.document_name}</span>
-                  </div>
-                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                    {Math.round(source.confidence * 100)}%
-                  </span>
-                </div>
-
-                <p className="text-xs leading-relaxed text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200">
-                  "{source.snippet}"
-                </p>
-
-                <div className="flex items-center justify-between text-[11px] pt-1">
-                  <span className="text-slate-400 font-medium">Page {source.page}</span>
-                  <span className="text-indigo-600 font-semibold text-[11px]">
-                    Verified Chunk
-                  </span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
       </div>
 
     </div>

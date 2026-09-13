@@ -70,7 +70,7 @@ def chat_with_docs_stream(
                 "snippet": (text[:180].strip() + "...") if len(text) > 180 else text.strip()
             })
             
-    system_prompt = "You are DocuMind AI, an intelligent assistant. Answer the user's question based strictly on the provided context from their documents. If the answer is not in the context, just say you don't know based on the provided documents. Context:\n" + context_text
+    system_prompt = "You are DocuMind AI, an intelligent assistant. Answer the user's question directly and concisely based strictly on the provided context from their documents. Do not include citations, source references, or page numbers in your answers. If the answer is not in the context, just say you don't know based on the provided documents. Context:\n" + context_text
 
     # 4. Construct Messages array for Groq (ensuring standard OpenAI/Groq roles: system, user, assistant)
     messages_for_llm = [{"role": "system", "content": system_prompt}]
