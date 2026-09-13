@@ -10,3 +10,5 @@ build/
 htmlcov/
 .pytest_cache/
 .DS_Store
+
+apps/backend/data/uploads/
