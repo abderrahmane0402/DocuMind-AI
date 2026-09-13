@@ -120,7 +120,10 @@ python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-# Run migrations
+# Ensure .env exists (create from template in root or backend)
+cp ../../.env.example .env
+
+# Run database migrations
 alembic upgrade head
 
 # Start API
