@@ -7,8 +7,6 @@ import {
   UploadCloud, 
   MessageSquare, 
   LogOut, 
-  Search, 
-  Bell, 
   Menu,
   ChevronLeft,
   ChevronRight,
@@ -157,7 +155,7 @@ function TopBar({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) {
 
       <div className="flex items-center gap-3">
         {/* System Telemetry Badges */}
-        <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-500 font-medium bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200">
+        <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200">
           <span className="flex items-center gap-1 text-emerald-600 font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             Qdrant & Groq
@@ -165,21 +163,6 @@ function TopBar({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) {
           <span className="text-slate-300">|</span>
           <span>Online</span>
         </div>
-
-        {/* Global Search */}
-        <div className="relative hidden md:block w-64">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Search documents or queries..." 
-            className="w-full h-8 pl-8 pr-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:bg-white transition-colors"
-          />
-        </div>
-
-        {/* Notifications */}
-        <button className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors relative">
-          <Bell className="w-4 h-4" />
-        </button>
       </div>
     </header>
   );
