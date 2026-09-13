@@ -26,4 +26,4 @@ format:
 	cd apps/frontend && npm run format
 
 lint:
-	cd apps/backend && ruff check .\n
+	cd apps/backend && ruff check .

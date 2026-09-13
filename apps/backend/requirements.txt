@@ -10,4 +10,4 @@ redis==5.0.1
 qdrant-client==1.7.0
 pytest==7.4.3
 ruff==0.1.7
-mypy==1.7.1\n
+mypy==1.7.1

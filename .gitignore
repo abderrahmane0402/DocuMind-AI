@@ -9,4 +9,4 @@ build/
 .coverage
 htmlcov/
 .pytest_cache/
-.DS_Store\n
+.DS_Store

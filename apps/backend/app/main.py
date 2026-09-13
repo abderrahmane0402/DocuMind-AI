@@ -13,4 +13,4 @@ def health_live():
 @app.get("/health/ready")
 def health_ready():
     # Will check db/redis in the future
-    return {"status": "ready"}\n
+    return {"status": "ready"}

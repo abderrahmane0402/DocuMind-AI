@@ -29,4 +29,4 @@ services:
 volumes:
   pgdata:
   redisdata:
-  qdrantdata:\n
+  qdrantdata:
