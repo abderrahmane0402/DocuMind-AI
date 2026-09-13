@@ -14,7 +14,7 @@
 
 Transform complex documents, contracts, and financial statements into instantly queryable insights using high-speed vector retrieval and advanced LLM reasoning.
 
-[Features](#-key-features) • [Architecture](#-architecture) • [Quickstart](#-quickstart-with-docker) • [Oracle Cloud & VPS](#-deploy-on-vps--oracle-cloud-vm) • [Tech Stack](#-tech-stack)
+[Features](#-key-features) • [Architecture](#-architecture) • [Quickstart](#-quickstart-with-docker) • [Tech Stack](#-tech-stack) • [License](#-license)
 
 </div>
 
@@ -81,42 +81,6 @@ docker compose -f docker-compose.prod.yml up -d --build
 Access the application in your browser:
 - **Web UI**: `http://localhost`
 - **FastAPI Interactive Docs**: `http://localhost/api/v1/docs`
-
----
-
-## ☁️ Deploy on VPS / Oracle Cloud VM
-
-DocuMind AI is pre-configured for production hosting on any VPS (Oracle Cloud Free Tier, DigitalOcean, Hetzner, AWS EC2) behind **Caddy** or **Nginx**.
-
-### 1. Configure Port for Reverse Proxy
-If running behind Caddy on your VM, set `PORT` in `.env` so it doesn't conflict with ports `80`/`443`:
-```env
-PORT=3000
-```
-Then start the stack:
-```bash
-docker compose -f docker-compose.prod.yml up -d --build
-```
-
-### 2. Caddyfile Configuration
-Add this reverse proxy block to your `/etc/caddy/Caddyfile`:
-```caddy
-documind.yourdomain.com {
-    reverse_proxy localhost:3000 {
-        flush_interval -1
-    }
-
-    request_body {
-        max_size 50MB
-    }
-}
-```
-Reload Caddy:
-```bash
-sudo systemctl reload caddy
-```
-
-Your app is now live with automatic SSL/HTTPS!
 
 ---
 
