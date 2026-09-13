@@ -1,6 +1,7 @@
 import uuid
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
@@ -10,6 +11,7 @@ from app.models.document import Document
 from app.models.membership import Membership
 from app.schemas.document import DocumentResponse
 from app.services.documents.storage import get_storage_provider, StorageProvider
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -105,13 +107,88 @@ def delete_document(
         raise HTTPException(status_code=404, detail="Document not found")
         
     membership = db.execute(select(Membership).filter_by(workspace_id=doc.workspace_id, user_id=current_user.id)).scalar_one_or_none()
-    if not membership or membership.role not in ["admin", "uploader", "reviewer", "owner"]: # simplified check
+    if not membership:
         raise HTTPException(status_code=403, detail="Not authorized to delete documents in this workspace")
         
-    storage.delete_file(doc.storage_name)
+    # Delete from local/s3 storage
+    try:
+        storage.delete_file(doc.storage_name)
+    except Exception as e:
+        print(f"File storage delete error: {e}")
+        
+    # Delete associated points from Qdrant vector store
+    try:
+        from app.core.qdrant import get_qdrant_client
+        from qdrant_client.http.models import Filter, FieldCondition, MatchValue
+        qdrant = get_qdrant_client()
+        qdrant.delete(
+            collection_name=settings.QDRANT_COLLECTION,
+            points_selector=Filter(
+                must=[
+                    FieldCondition(
+                        key="document_id",
+                        match=MatchValue(value=str(doc.id))
+                    )
+                ]
+            )
+        )
+    except Exception as e:
+        print(f"Qdrant points delete error: {e}")
+        
     db.delete(doc)
     db.commit()
     return None
+
+class BatchDeleteRequest(BaseModel):
+    document_ids: list[uuid.UUID]
+
+@router.post("/batch-delete", status_code=status.HTTP_200_OK)
+def batch_delete_documents(
+    body: BatchDeleteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    storage: StorageProvider = Depends(get_storage_provider)
+):
+    if not body.document_ids:
+        return {"deleted_count": 0}
+
+    docs = db.execute(select(Document).filter(Document.id.in_(body.document_ids))).scalars().all()
+    deleted_count = 0
+
+    from app.core.qdrant import get_qdrant_client
+    from qdrant_client.http.models import Filter, FieldCondition, MatchValue
+    qdrant = get_qdrant_client()
+
+    for doc in docs:
+        membership = db.execute(select(Membership).filter_by(workspace_id=doc.workspace_id, user_id=current_user.id)).scalar_one_or_none()
+        if not membership:
+            continue
+
+        try:
+            storage.delete_file(doc.storage_name)
+        except Exception:
+            pass
+
+        try:
+            qdrant.delete(
+                collection_name=settings.QDRANT_COLLECTION,
+                points_selector=Filter(
+                    must=[
+                        FieldCondition(
+                            key="document_id",
+                            match=MatchValue(value=str(doc.id))
+                        )
+                    ]
+                )
+            )
+        except Exception:
+            pass
+
+        db.delete(doc)
+        deleted_count += 1
+
+    db.commit()
+    return {"deleted_count": deleted_count}
 
 @router.get("/stats/summary")
 def get_workspace_document_stats(

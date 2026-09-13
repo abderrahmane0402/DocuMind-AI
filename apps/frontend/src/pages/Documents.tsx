@@ -4,11 +4,12 @@ import {
   FileText, 
   UploadCloud, 
   Search, 
-  MoreVertical, 
   RefreshCw,
   ChevronLeft,
   ChevronRight,
-  Filter
+  Filter,
+  Trash2,
+  CheckSquare
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -30,6 +31,7 @@ export default function Documents() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchDocs = async () => {
     if (!user || !token || !user.workspaces?.[0]) return;
@@ -49,15 +51,62 @@ export default function Documents() {
     }
   };
 
+  const deleteDocument = async (id: string, filename: string) => {
+    if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
+    try {
+      setDeleting(true);
+      const res = await fetch(`http://localhost:8000/api/v1/documents/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok || res.status === 204) {
+        setDocuments(prev => prev.filter(d => d.id !== id));
+        setSelectedIds(prev => prev.filter(item => item !== id));
+      } else {
+        alert('Failed to delete document.');
+      }
+    } catch (err) {
+      console.error('Failed to delete document:', err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const deleteSelectedDocuments = async () => {
+    if (selectedIds.length === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected document(s)?`)) return;
+    try {
+      setDeleting(true);
+      const res = await fetch('http://localhost:8000/api/v1/documents/batch-delete', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ document_ids: selectedIds })
+      });
+      if (res.ok) {
+        setDocuments(prev => prev.filter(d => !selectedIds.includes(d.id)));
+        setSelectedIds([]);
+      } else {
+        alert('Failed to delete selected documents.');
+      }
+    } catch (err) {
+      console.error('Failed to batch delete:', err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   useEffect(() => {
     fetchDocs();
   }, [user, token]);
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === documents.length) {
+    if (selectedIds.length === filtered.length && filtered.length > 0) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(documents.map(d => d.id));
+      setSelectedIds(filtered.map(d => d.id));
     }
   };
 
@@ -168,11 +217,52 @@ export default function Documents() {
           </select>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-[#6B7280]">
-          <Filter className="w-3.5 h-3.5" />
-          <span>{filtered.length} results</span>
+        <div className="flex items-center gap-3">
+          {selectedIds.length > 0 && (
+            <button
+              onClick={deleteSelectedDocuments}
+              disabled={deleting}
+              className="h-9 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete ({selectedIds.length})</span>
+            </button>
+          )}
+
+          <div className="flex items-center gap-2 text-xs text-[#6B7280]">
+            <Filter className="w-3.5 h-3.5" />
+            <span>{filtered.length} results</span>
+          </div>
         </div>
       </div>
+
+      {/* Bulk Selection Notification Banner */}
+      {selectedIds.length > 0 && (
+        <div className="bg-indigo-50/80 border border-indigo-200 rounded-xl px-4 py-3 flex items-center justify-between text-xs text-indigo-900">
+          <div className="flex items-center gap-2">
+            <CheckSquare className="w-4 h-4 text-indigo-600" />
+            <span>
+              <strong className="font-semibold">{selectedIds.length}</strong> document{selectedIds.length > 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedIds([])}
+              className="px-2.5 py-1 text-xs text-indigo-700 hover:text-indigo-900 hover:bg-indigo-100/60 rounded-md font-medium transition-colors"
+            >
+              Deselect All
+            </button>
+            <button
+              onClick={deleteSelectedDocuments}
+              disabled={deleting}
+              className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-md font-semibold flex items-center gap-1.5 transition-colors shadow-xs"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete Selected
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Table: selection | name | type | status | uploaded by | date | size | actions */}
       <div className="bg-white rounded-xl border border-[#E5E7EB] shadow-xs overflow-hidden">
@@ -194,7 +284,7 @@ export default function Documents() {
                 <th className="px-4 py-3">Uploaded By</th>
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Size</th>
-                <th className="px-4 py-3 text-right"></th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E5E7EB]">
@@ -260,8 +350,13 @@ export default function Documents() {
                     </td>
                     <td className="px-4 py-3 text-[#6B7280]">{formatSize(doc.file_size_bytes)}</td>
                     <td className="px-4 py-3 text-right">
-                      <button className="p-1 text-[#9CA3AF] hover:text-[#111827] rounded-md transition-colors">
-                        <MoreVertical className="w-4 h-4" />
+                      <button 
+                        onClick={() => deleteDocument(doc.id, doc.original_filename)}
+                        disabled={deleting}
+                        className="p-1.5 text-[#9CA3AF] hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
+                        title="Delete document"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
