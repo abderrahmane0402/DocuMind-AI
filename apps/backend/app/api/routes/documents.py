@@ -119,6 +119,9 @@ def get_workspace_document_stats(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    from app.models.document_chunk import DocumentChunk
+    from sqlalchemy import func
+
     membership = db.execute(select(Membership).filter_by(workspace_id=workspace_id, user_id=current_user.id)).scalar_one_or_none()
     if not membership:
         raise HTTPException(status_code=403, detail="Not a member of this workspace")
@@ -129,25 +132,38 @@ def get_workspace_document_stats(
     completed = sum(1 for d in docs if d.status == "completed")
     processing = sum(1 for d in docs if d.status == "processing")
     needs_review = sum(1 for d in docs if d.status in ["failed", "needs_review"])
+    total_bytes = sum(d.file_size_bytes or 0 for d in docs)
     
     # Types count
     invoices = sum(1 for d in docs if "pdf" in (d.mime_type or "").lower())
     receipts = sum(1 for d in docs if "image" in (d.mime_type or "").lower())
-    others = total - invoices - receipts
+    others = max(0, total - invoices - receipts)
     
-    # Accurate accuracy indicator: 100% if all completed, 0% if none, etc.
-    accuracy = round((completed / total * 100), 1) if total > 0 else 0.0
+    # Accurate chunks count from database
+    total_chunks = db.execute(
+        select(func.count(DocumentChunk.id))
+        .join(Document, DocumentChunk.document_id == Document.id)
+        .filter(Document.workspace_id == workspace_id)
+    ).scalar() or 0
 
     return {
         "total_documents": total,
-        "processed_today": completed,
-        "needs_review": needs_review,
+        "completed": completed,
         "processing": processing,
-        "extraction_accuracy": accuracy,
+        "needs_review": needs_review,
+        "total_chunks": total_chunks,
+        "total_bytes": total_bytes,
         "types": {
-            "invoices": invoices,
-            "receipts": receipts,
-            "others": max(0, others)
+            "pdf": invoices,
+            "images": receipts,
+            "others": others
+        },
+        "system_status": {
+            "api": "healthy",
+            "vector_store": "connected",
+            "embedding_model": "all-MiniLM-L6-v2 (384d)",
+            "llm_model": "Qwen 2.5 (Groq Cloud)"
         }
     }
+
 

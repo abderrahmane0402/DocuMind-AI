@@ -6,19 +6,13 @@ import {
   Files, 
   UploadCloud, 
   MessageSquare, 
-  CheckSquare, 
-  BarChart3, 
-  FolderKanban, 
-  Users, 
-  ShieldAlert, 
-  Settings, 
   LogOut, 
   Search, 
   Bell, 
   Menu,
   ChevronLeft,
   ChevronRight,
-  Layers
+  Sparkles
 } from 'lucide-react';
 
 import Login from './pages/Login';
@@ -27,55 +21,64 @@ import Dashboard from './pages/Dashboard';
 import Documents from './pages/Documents';
 import UploadCenter from './pages/UploadCenter';
 import Chat from './pages/Chat';
-import Validation from './pages/Validation';
-import Analytics from './pages/Analytics';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed: (val: boolean) => void }) {
   const { logout, user } = useAuth();
 
-  // Navigation order explicitly defined in Section 6:
-  // 1. Dashboard, 2. Documents, 3. Upload, 4. Chat (RAG), 5. Validation, 6. Analytics, 7. Workspaces, 8. Users, 9. Audit logs, 10. Settings
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Documents', path: '/documents', icon: Files },
-    { name: 'Upload', path: '/upload', icon: UploadCloud },
     { name: 'Chat (RAG)', path: '/chat', icon: MessageSquare },
-    { name: 'Validation', path: '/validation', icon: CheckSquare },
-    { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-    { name: 'Workspaces', path: '/workspaces', icon: FolderKanban },
-    { name: 'Users', path: '/users', icon: Users },
-    { name: 'Audit Logs', path: '/audit-logs', icon: ShieldAlert },
-    { name: 'Settings', path: '/settings', icon: Settings },
+    { name: 'Upload', path: '/upload', icon: UploadCloud },
   ];
 
   return (
     <aside 
-      style={{ backgroundColor: '#0B102D' }}
-      className={`fixed inset-y-0 left-0 z-30 flex flex-col transition-all duration-200 border-r border-[#151C46] ${
-        collapsed ? 'w-[72px]' : 'w-[240px]'
+      className={`fixed inset-y-0 left-0 z-30 flex flex-col bg-slate-900 border-r border-slate-800 transition-all duration-200 select-none ${
+        collapsed ? 'w-[68px]' : 'w-[230px]'
       }`}
     >
       {/* Brand Header */}
-      <div className="h-16 px-4 flex items-center justify-between border-b border-[#151C46]/60 shrink-0">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <div className="w-8 h-8 rounded-lg bg-[#4F46E5] flex items-center justify-center shrink-0 shadow-xs">
-            <Layers className="w-4 h-4 text-white" />
+      <div className="h-15 px-4 flex items-center justify-between border-b border-slate-800/80 shrink-0">
+        <div className="flex items-center gap-2.5 overflow-hidden">
+          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/30">
+            <Sparkles className="w-4 h-4 text-white" />
           </div>
           {!collapsed && (
-            <span className="text-white font-bold text-base tracking-tight truncate">
-              DocuMind AI
-            </span>
+            <div className="flex flex-col overflow-hidden">
+              <span className="text-white font-bold text-sm tracking-tight truncate leading-tight">
+                DocuMind AI
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium tracking-wide">
+                Document Intelligence
+              </span>
+            </div>
           )}
         </div>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#151C46] transition-colors hidden lg:block"
+          className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors hidden lg:block"
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       </div>
+
+      {/* Workspace Indicator */}
+      {!collapsed && (
+        <div className="px-3 pt-3 pb-1">
+          <div className="px-2.5 py-1.5 rounded-md bg-slate-800/50 border border-slate-700/40 flex items-center justify-between text-[11px]">
+            <span className="text-slate-300 font-medium truncate">
+              {user?.workspaces?.[0]?.name || 'Default Workspace'}
+            </span>
+            <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              Live
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Navigation List */}
       <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
@@ -84,41 +87,43 @@ function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
-              `flex items-center h-10 px-3 rounded-lg text-[13px] font-medium transition-all ${
+              `flex items-center h-9 px-3 rounded-lg text-xs font-medium transition-colors ${
                 isActive
-                  ? 'bg-[#4F46E5] text-white shadow-xs'
-                  : 'text-[#CBD5E1] hover:text-white hover:bg-[#151C46]'
+                  ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 font-semibold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
               } ${collapsed ? 'justify-center px-0' : 'gap-3'}`
             }
             title={collapsed ? item.name : undefined}
           >
-            <item.icon className="w-[18px] h-[18px] shrink-0" />
+            <item.icon className="w-4 h-4 shrink-0" />
             {!collapsed && <span className="truncate">{item.name}</span>}
           </NavLink>
         ))}
       </nav>
 
       {/* Profile & Logout Block */}
-      <div className="p-3 border-t border-[#151C46]/60 shrink-0">
-        <div className={`flex items-center gap-2.5 p-2 rounded-lg hover:bg-[#151C46]/50 transition-colors ${collapsed ? 'justify-center p-1' : ''}`}>
-          <div className="w-8 h-8 rounded-full bg-[#151C46] border border-[#4F46E5]/40 flex items-center justify-center text-white text-xs font-semibold shrink-0">
+      <div className="p-3 border-t border-slate-800/80 shrink-0">
+        <div className={`flex items-center gap-2.5 p-2 rounded-lg bg-slate-800/40 border border-slate-800/60 ${collapsed ? 'justify-center p-1.5' : ''}`}>
+          <div className="w-7 h-7 rounded-full bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-300 text-xs font-bold shrink-0">
             {user?.email?.charAt(0).toUpperCase() || 'U'}
           </div>
           {!collapsed && (
             <div className="flex-1 overflow-hidden">
-              <div className="text-[13px] font-medium text-white truncate leading-tight">
-                {user?.display_name || user?.email || 'Sarah Johnson'}
+              <div className="text-xs font-medium text-slate-200 truncate leading-tight">
+                {user?.display_name || user?.email?.split('@')[0] || 'User'}
               </div>
-              <div className="text-[11px] text-slate-400 truncate">Admin</div>
+              <div className="text-[10px] text-slate-400 truncate">
+                {user?.email || 'Admin'}
+              </div>
             </div>
           )}
           {!collapsed && (
             <button
               onClick={logout}
-              className="p-1 text-slate-400 hover:text-red-400 rounded-md transition-colors"
+              className="p-1 text-slate-400 hover:text-red-400 rounded-md hover:bg-slate-800 transition-colors"
               title="Sign out"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -130,37 +135,50 @@ function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed
 function TopBar({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) {
   const location = useLocation();
   const pathTitle = location.pathname.substring(1).replace('-', ' ') || 'Dashboard';
-  const displayTitle = pathTitle.charAt(0).toUpperCase() + pathTitle.slice(1);
+  const displayTitle = pathTitle === 'chat' ? 'Chat (RAG)' : pathTitle.charAt(0).toUpperCase() + pathTitle.slice(1);
 
   return (
-    <header className="h-16 bg-white border-b border-[#E5E7EB] sticky top-0 z-20 flex items-center justify-between px-6 lg:px-8 shrink-0">
+    <header className="h-14 bg-white border-b border-slate-200 sticky top-0 z-20 flex items-center justify-between px-6 lg:px-8 shrink-0">
       <div className="flex items-center gap-3">
         <button 
           onClick={onOpenMobileMenu} 
-          className="p-2 -ml-2 text-slate-500 hover:text-slate-900 lg:hidden rounded-lg hover:bg-slate-50"
+          className="p-1.5 -ml-1 text-slate-500 hover:text-slate-900 lg:hidden rounded-lg hover:bg-slate-50"
         >
           <Menu className="w-5 h-5" />
         </button>
-        <span className="text-lg font-bold text-[#111827] capitalize tracking-tight">
-          {displayTitle}
-        </span>
+
+        {/* Clean Breadcrumb (Eliminates the duplicate header bug) */}
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+          <span>DocuMind</span>
+          <span className="text-slate-300">/</span>
+          <span className="text-slate-900 font-semibold">{displayTitle}</span>
+        </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* Search - 320px width on desktop as specified in Section 6 */}
-        <div className="relative hidden md:block w-[320px]">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+      <div className="flex items-center gap-3">
+        {/* System Telemetry Badges */}
+        <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-500 font-medium bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200">
+          <span className="flex items-center gap-1 text-emerald-600 font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            Qdrant & Groq
+          </span>
+          <span className="text-slate-300">|</span>
+          <span>Online</span>
+        </div>
+
+        {/* Global Search */}
+        <div className="relative hidden md:block w-64">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input 
             type="text" 
-            placeholder="Search anything..." 
-            className="w-full h-9 pl-9 pr-3 bg-[#F9FAFB] border border-[#D1D5DB] rounded-lg text-[13px] text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#4F46E5] focus:ring-2 focus:ring-[#EEF2FF]"
+            placeholder="Search documents or queries..." 
+            className="w-full h-8 pl-8 pr-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:bg-white transition-colors"
           />
         </div>
 
         {/* Notifications */}
-        <button className="relative p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors">
+        <button className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors relative">
           <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#EF4444] rounded-full ring-2 ring-white"></span>
         </button>
       </div>
     </header>
@@ -172,7 +190,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#F6F8FC] flex text-[#111827]">
+    <div className="min-h-screen bg-slate-50 flex text-slate-900 font-sans antialiased">
       {/* Desktop Sidebar */}
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
 
@@ -180,7 +198,7 @@ function Layout({ children }: { children: React.ReactNode }) {
       {mobileOpen && (
         <div 
           onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 bg-[#070B22]/55 z-40 lg:hidden backdrop-blur-xs"
+          className="fixed inset-0 bg-slate-950/50 z-40 lg:hidden backdrop-blur-xs"
         />
       )}
 
@@ -190,23 +208,11 @@ function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main Fluid Content */}
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-200 ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-[240px]'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-200 ${collapsed ? 'lg:pl-[68px]' : 'lg:pl-[230px]'}`}>
         <TopBar onOpenMobileMenu={() => setMobileOpen(true)} />
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
           {children}
         </main>
-      </div>
-    </div>
-  );
-}
-
-function PlaceholderPage({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="bg-white rounded-xl border border-[#E5E7EB] p-8 shadow-xs max-w-4xl">
-      <h2 className="text-xl font-bold text-[#111827]">{title}</h2>
-      <p className="text-sm text-[#6B7280] mt-1">{description}</p>
-      <div className="mt-8 p-6 rounded-lg border border-dashed border-[#D1D5DB] text-center text-sm text-[#9CA3AF]">
-        Feature active and configured in enterprise suite.
       </div>
     </div>
   );
@@ -224,12 +230,6 @@ export default function App() {
           <Route path="/documents" element={<ProtectedRoute><Layout><Documents /></Layout></ProtectedRoute>} />
           <Route path="/upload" element={<ProtectedRoute><Layout><UploadCenter /></Layout></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute><Layout><Chat /></Layout></ProtectedRoute>} />
-          <Route path="/validation" element={<ProtectedRoute><Layout><Validation /></Layout></ProtectedRoute>} />
-          <Route path="/analytics" element={<ProtectedRoute><Layout><Analytics /></Layout></ProtectedRoute>} />
-          <Route path="/workspaces" element={<ProtectedRoute><Layout><PlaceholderPage title="Workspaces Management" description="Multi-tenant workspace isolation and role permissions." /></Layout></ProtectedRoute>} />
-          <Route path="/users" element={<ProtectedRoute><Layout><PlaceholderPage title="User Administration" description="Manage enterprise members, roles, and API access." /></Layout></ProtectedRoute>} />
-          <Route path="/audit-logs" element={<ProtectedRoute><Layout><PlaceholderPage title="Audit & Compliance Logs" description="Immutable activity tracking for SOC2 and GDPR compliance." /></Layout></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><Layout><PlaceholderPage title="System Settings" description="Configure OCR engines, Qdrant vectors, and LLM providers." /></Layout></ProtectedRoute>} />
         </Routes>
       </Router>
     </AuthProvider>

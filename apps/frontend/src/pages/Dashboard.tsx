@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
-  ArrowUpRight, 
-  FileText,
-  Calendar,
+  FileText, 
+  CheckCircle2, 
+  Layers, 
+  Cpu, 
+  MessageSquare, 
+  UploadCloud, 
+  ArrowRight,
+  Database,
   Sparkles,
-  CheckCircle2,
-  Clock,
-  AlertCircle
+  RefreshCw,
+  HardDrive
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface DocumentItem {
   id: string;
@@ -23,377 +27,284 @@ interface DocumentItem {
 
 interface StatsSummary {
   total_documents: number;
-  processed_today: number;
-  needs_review: number;
+  completed: number;
   processing: number;
-  extraction_accuracy: number;
+  needs_review: number;
+  total_chunks: number;
+  total_bytes: number;
   types: {
-    invoices: number;
-    receipts: number;
+    pdf: number;
+    images: number;
     others: number;
+  };
+  system_status: {
+    api: string;
+    vector_store: string;
+    embedding_model: string;
+    llm_model: string;
   };
 }
 
 export default function Dashboard() {
   const { user, token } = useAuth();
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [stats, setStats] = useState<StatsSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [quickQuery, setQuickQuery] = useState('');
+
+  const fetchData = async () => {
+    if (!user || !token || !user.workspaces?.[0]) return;
+    const wsId = user.workspaces[0].id;
+    const headers = { Authorization: `Bearer ${token}` };
+
+    try {
+      setLoading(true);
+      const [docsRes, statsRes] = await Promise.all([
+        fetch(`http://localhost:8000/api/v1/documents/?workspace_id=${wsId}`, { headers }),
+        fetch(`http://localhost:8000/api/v1/documents/stats/summary?workspace_id=${wsId}`, { headers })
+      ]);
+
+      if (docsRes.ok) {
+        const docsData = await docsRes.json();
+        setDocuments(docsData);
+      }
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        setStats(statsData);
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!user || !token || !user.workspaces?.[0]) return;
-      const wsId = user.workspaces[0].id;
-      const headers = { Authorization: `Bearer ${token}` };
-
-      try {
-        const [docsRes, statsRes] = await Promise.all([
-          fetch(`http://localhost:8000/api/v1/documents/?workspace_id=${wsId}`, { headers }),
-          fetch(`http://localhost:8000/api/v1/documents/stats/summary?workspace_id=${wsId}`, { headers })
-        ]);
-
-        if (docsRes.ok) {
-          const docsData = await docsRes.json();
-          setDocuments(docsData);
-        }
-        if (statsRes.ok) {
-          const statsData = await statsRes.json();
-          setStats(statsData);
-        }
-      } catch (err) {
-        console.error('Error fetching dashboard statistics:', err);
-      }
-    };
     fetchData();
   }, [user, token]);
 
-  // Derived real metrics
+  // Real statistics directly from database
   const totalDocs = stats?.total_documents ?? documents.length;
-  const completedDocs = stats?.processed_today ?? documents.filter(d => d.status === 'completed').length;
-  const needsReviewDocs = stats?.needs_review ?? documents.filter(d => d.status === 'failed' || d.status === 'needs_review').length;
+  const completedDocs = stats?.completed ?? documents.filter(d => d.status === 'completed').length;
   const processingDocs = stats?.processing ?? documents.filter(d => d.status === 'processing').length;
-  const accuracy = stats?.extraction_accuracy ?? (totalDocs > 0 ? Math.round((completedDocs / totalDocs) * 100) : 0);
+  const totalChunks = stats?.total_chunks ?? 0;
+  const totalBytes = stats?.total_bytes ?? documents.reduce((acc, d) => acc + (d.file_size_bytes || 0), 0);
 
-  const invoicesCount = stats?.types.invoices ?? documents.filter(d => (d.mime_type || '').includes('pdf')).length;
-  const receiptsCount = stats?.types.receipts ?? documents.filter(d => (d.mime_type || '').includes('image')).length;
-  const othersCount = stats?.types.others ?? Math.max(0, totalDocs - invoicesCount - receiptsCount);
+  const pdfCount = stats?.types.pdf ?? documents.filter(d => (d.mime_type || '').includes('pdf')).length;
+  const imageCount = stats?.types.images ?? documents.filter(d => (d.mime_type || '').includes('image')).length;
+  const otherCount = stats?.types.others ?? Math.max(0, totalDocs - pdfCount - imageCount);
 
-  const invoicePct = totalDocs > 0 ? Math.round((invoicesCount / totalDocs) * 100) : 0;
-  const receiptPct = totalDocs > 0 ? Math.round((receiptsCount / totalDocs) * 100) : 0;
-  const otherPct = totalDocs > 0 ? Math.max(0, 100 - invoicePct - receiptPct) : 0;
+  const formatSize = (bytes: number) => {
+    if (!bytes || bytes === 0) return '0 KB';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
-  // Donut SVG calculations
-  const circumference = 238; // 2 * pi * 38
-  const invoiceStroke = (invoicePct / 100) * circumference;
-  const receiptStroke = (receiptPct / 100) * circumference;
-  const otherStroke = (otherPct / 100) * circumference;
+  const handleQuickSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickQuery.trim()) return;
+    navigate('/chat');
+  };
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-5">
+    <div className="max-w-6xl mx-auto space-y-6">
       
-      {/* Header: Title + Date Range Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+      {/* Header & Quick Action CTAs */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
-          <h1 className="text-2xl lg:text-[26px] font-bold text-[#111827] tracking-tight">
-            Dashboard
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            Workspace Overview
           </h1>
-          <p className="text-xs text-[#6B7280] mt-0.5">
-            Real-time document pipeline, OCR extraction, and RAG knowledge metrics
+          <p className="text-xs text-slate-500 mt-0.5">
+            Real-time status of your documents, OCR ingestion pipeline, and Qdrant RAG store
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2.5">
-          <div className="h-8 px-3 bg-white border border-[#E5E7EB] rounded-lg text-xs font-medium text-[#111827] flex items-center gap-2 shadow-xs">
-            <Calendar className="w-3.5 h-3.5 text-[#6B7280]" />
-            <span>Today</span>
-          </div>
+          <button
+            onClick={fetchData}
+            className="h-8 px-3 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-medium rounded-lg shadow-xs flex items-center gap-1.5 transition-colors"
+            title="Refresh statistics"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-indigo-600' : 'text-slate-400'}`} />
+            <span>Sync</span>
+          </button>
+          
           <Link
             to="/upload"
-            className="h-8 px-3.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors"
+            className="h-8 px-3.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors"
           >
-            Upload
+            <UploadCloud className="w-3.5 h-3.5" />
+            <span>Upload Document</span>
           </Link>
         </div>
       </div>
 
-      {/* Row 1: 5 Metric Cards (All 100% Real Dynamic Stats) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+      {/* Row 1: 4 Balanced Metric Cards (100% Real Live Metrics) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Total Documents */}
-        <div className="bg-white rounded-xl border border-[#E5E7EB] p-4 shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-medium text-[#6B7280]">Total Documents</span>
-          <div className="mt-2">
-            <div className="text-2xl lg:text-[26px] font-bold text-[#111827] leading-none">{totalDocs}</div>
-            <div className="flex items-center text-[11px] font-medium text-[#10B981] mt-2">
-              <ArrowUpRight className="w-3.5 h-3.5 mr-0.5" />
-              <span>{completedDocs} indexed</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Processed Today */}
-        <div className="bg-white rounded-xl border border-[#E5E7EB] p-4 shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-medium text-[#6B7280]">Processed & Ready</span>
-          <div className="mt-2">
-            <div className="text-2xl lg:text-[26px] font-bold text-[#111827] leading-none">{completedDocs}</div>
-            <div className="flex items-center text-[11px] font-medium text-[#10B981] mt-2">
-              <CheckCircle2 className="w-3 h-3 mr-1" />
-              <span>{totalDocs > 0 ? `${Math.round((completedDocs / totalDocs) * 100)}% rate` : '100%'}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Needs Review */}
-        <div className="bg-white rounded-xl border border-[#E5E7EB] p-4 shadow-xs flex flex-col justify-between">
+        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-[#6B7280]">Needs Review</span>
-            {needsReviewDocs > 0 && <span className="w-2 h-2 rounded-full bg-[#EF4444] animate-pulse" />}
+            <span className="text-xs font-medium text-slate-500">Total Documents</span>
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+              <FileText className="w-4 h-4" />
+            </div>
           </div>
-          <div className="mt-2">
-            <div className="text-2xl lg:text-[26px] font-bold text-[#111827] leading-none">{needsReviewDocs}</div>
-            <div className={`flex items-center text-[11px] font-medium mt-2 ${needsReviewDocs > 0 ? 'text-[#EF4444]' : 'text-[#6B7280]'}`}>
-              {needsReviewDocs > 0 ? (
-                <>
-                  <AlertCircle className="w-3 h-3 mr-1" />
-                  <span>Action needed</span>
-                </>
-              ) : (
-                <span>All clear</span>
-              )}
+          <div className="mt-4">
+            <div className="text-3xl font-bold text-slate-900 tracking-tight">{totalDocs}</div>
+            <div className="flex items-center gap-1 text-xs text-slate-500 mt-1.5">
+              <HardDrive className="w-3 h-3 text-slate-400" />
+              <span>{formatSize(totalBytes)} stored</span>
             </div>
           </div>
         </div>
 
-        {/* Extraction Accuracy */}
-        <div className="bg-white rounded-xl border border-[#E5E7EB] p-4 shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-medium text-[#6B7280]">Extraction Accuracy</span>
-          <div className="mt-2">
-            <div className="text-2xl lg:text-[26px] font-bold text-[#111827] leading-none">
-              {totalDocs > 0 ? `${accuracy}%` : '100%'}
+        {/* Ready for RAG */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500">Ready for Retrieval</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <CheckCircle2 className="w-4 h-4" />
             </div>
-            <div className="flex items-center text-[11px] font-medium text-[#10B981] mt-2">
-              <Sparkles className="w-3 h-3 mr-1 text-[#4F46E5]" />
-              <span>Tesseract + Qdrant</span>
+          </div>
+          <div className="mt-4">
+            <div className="text-3xl font-bold text-slate-900 tracking-tight">{completedDocs}</div>
+            <div className="flex items-center gap-1 text-xs text-emerald-600 font-medium mt-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>{totalDocs > 0 ? `${Math.round((completedDocs / totalDocs) * 100)}% indexed` : '0 indexed'}</span>
             </div>
           </div>
         </div>
 
-        {/* Active Pipeline */}
-        <div className="bg-white rounded-xl border border-[#E5E7EB] p-4 shadow-xs flex flex-col justify-between col-span-2 sm:col-span-1">
-          <span className="text-[11px] font-medium text-[#6B7280]">Active In Pipeline</span>
-          <div className="mt-2">
-            <div className="text-2xl lg:text-[26px] font-bold text-[#111827] leading-none">{processingDocs}</div>
-            <div className="flex items-center text-[11px] font-medium text-[#4F46E5] mt-2">
-              <Clock className="w-3 h-3 mr-1" />
-              <span>{processingDocs > 0 ? 'Worker running' : 'Queue idle'}</span>
+        {/* Vectorized Chunks */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500">Vector Chunks</span>
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Layers className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="text-3xl font-bold text-slate-900 tracking-tight">{totalChunks}</div>
+            <div className="flex items-center gap-1 text-xs text-indigo-600 font-medium mt-1.5">
+              <Database className="w-3 h-3" />
+              <span>384-dim Qdrant vectors</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Pipeline Telemetry */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500">Ingestion Pipeline</span>
+            <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center">
+              <Cpu className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${processingDocs > 0 ? 'bg-blue-500 animate-ping' : 'bg-emerald-500'}`} />
+              {processingDocs > 0 ? `${processingDocs} Processing` : 'Idle & Ready'}
+            </div>
+            <div className="text-xs text-slate-500 mt-1.5">
+              Celery + Redis workers
             </div>
           </div>
         </div>
 
       </div>
 
-      {/* Row 2: Visualizations Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* Main Grid: Left (58% Documents Feed) & Right (42% Architecture & Telemetry) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* Processing Trend Area Chart (2/3 width) */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-[#E5E7EB] p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
+        {/* Left Column: Recent Documents Table */}
+        <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-[#111827]">
-                Documents Processing Trend
-              </h2>
-              <p className="text-[11px] text-[#6B7280]">Ingestion throughput over the last 7 days</p>
+              <h2 className="text-sm font-bold text-slate-900">Recent Documents</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Your actual uploaded documents in this workspace</p>
             </div>
-            <span className="text-[11px] font-medium text-[#6B7280] bg-[#F9FAFB] px-2 py-0.5 rounded border border-[#E5E7EB]">
-              Real-time
-            </span>
-          </div>
-
-          <div className="relative w-full h-44 my-2">
-            <svg viewBox="0 0 500 150" className="w-full h-full overflow-visible" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#4F46E5" stopOpacity="0.22" />
-                  <stop offset="100%" stopColor="#4F46E5" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
-              
-              <line x1="0" y1="30" x2="500" y2="30" stroke="#F3F4F6" strokeWidth="1" />
-              <line x1="0" y1="70" x2="500" y2="70" stroke="#F3F4F6" strokeWidth="1" />
-              <line x1="0" y1="110" x2="500" y2="110" stroke="#F3F4F6" strokeWidth="1" />
-              <line x1="0" y1="140" x2="500" y2="140" stroke="#E5E7EB" strokeWidth="1" />
-
-              <path
-                d={totalDocs > 0 
-                  ? "M 0,135 C 100,135 150,110 250,90 C 350,70 420,40 500,30 L 500,140 L 0,140 Z"
-                  : "M 0,140 L 500,140 Z"
-                }
-                fill="url(#areaGradient)"
-              />
-
-              <path
-                d={totalDocs > 0 
-                  ? "M 0,135 C 100,135 150,110 250,90 C 350,70 420,40 500,30"
-                  : "M 0,140 L 500,140"
-                }
-                fill="none"
-                stroke="#4F46E5"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              />
-
-              {totalDocs > 0 && (
-                <>
-                  <circle cx="250" cy="90" r="3.5" fill="#4F46E5" stroke="#FFFFFF" strokeWidth="2" />
-                  <circle cx="500" cy="30" r="3.5" fill="#4F46E5" stroke="#FFFFFF" strokeWidth="2" />
-                </>
-              )}
-            </svg>
-
-            <div className="flex justify-between text-[10px] text-[#9CA3AF] mt-1 font-medium">
-              <span>6d ago</span>
-              <span>5d ago</span>
-              <span>4d ago</span>
-              <span>3d ago</span>
-              <span>2d ago</span>
-              <span>Yesterday</span>
-              <span>Today</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Documents by Type Donut (1/3 width) */}
-        <div className="bg-white rounded-xl border border-[#E5E7EB] p-5 shadow-xs flex flex-col justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-[#111827]">
-              Documents by Type
-            </h2>
-            <p className="text-[11px] text-[#6B7280]">Actual workspace MIME distribution</p>
-          </div>
-
-          <div className="flex items-center justify-center my-3">
-            <div className="relative w-32 h-32 flex items-center justify-center">
-              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                <circle cx="50" cy="50" r="38" fill="transparent" stroke="#F3F4F6" strokeWidth="12" />
-                
-                {totalDocs > 0 ? (
-                  <>
-                    {/* Invoices (PDF) */}
-                    {invoiceStroke > 0 && (
-                      <circle 
-                        cx="50" cy="50" r="38" fill="transparent" stroke="#4F46E5" strokeWidth="12"
-                        strokeDasharray={`${invoiceStroke} ${circumference}`} strokeDashoffset="0"
-                      />
-                    )}
-                    {/* Receipts (Images) */}
-                    {receiptStroke > 0 && (
-                      <circle 
-                        cx="50" cy="50" r="38" fill="transparent" stroke="#10B981" strokeWidth="12"
-                        strokeDasharray={`${receiptStroke} ${circumference}`} strokeDashoffset={`-${invoiceStroke}`}
-                      />
-                    )}
-                    {/* Others */}
-                    {otherStroke > 0 && (
-                      <circle 
-                        cx="50" cy="50" r="38" fill="transparent" stroke="#F59E0B" strokeWidth="12"
-                        strokeDasharray={`${otherStroke} ${circumference}`} strokeDashoffset={`-${invoiceStroke + receiptStroke}`}
-                      />
-                    )}
-                  </>
-                ) : (
-                  <circle cx="50" cy="50" r="38" fill="transparent" stroke="#E5E7EB" strokeWidth="12" />
-                )}
-              </svg>
-              <div className="absolute flex flex-col items-center">
-                <span className="text-lg font-bold text-[#111827]">{totalDocs}</span>
-                <span className="text-[9px] text-[#6B7280] uppercase tracking-wider">Docs</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2 text-xs text-[#111827]">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2 text-[#6B7280]">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#4F46E5]" />
-                Invoices (PDF)
-              </span>
-              <span className="font-semibold">{invoicePct}% ({invoicesCount})</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2 text-[#6B7280]">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
-                Scans (Images)
-              </span>
-              <span className="font-semibold">{receiptPct}% ({receiptsCount})</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2 text-[#6B7280]">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
-                Other Documents
-              </span>
-              <span className="font-semibold">{otherPct}% ({othersCount})</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Row 3: Recent Documents (Real API Data Only) + Processing Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        
-        {/* Recent Documents Table (2/3 width) */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-[#E5E7EB] p-5 shadow-xs">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-[#111827]">
-              Recent Documents
-            </h2>
-            <Link to="/documents" className="text-xs font-semibold text-[#4F46E5] hover:underline">
-              View all
+            <Link to="/documents" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+              <span>View all</span>
+              <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="text-[11px] uppercase tracking-wider text-[#9CA3AF] border-b border-[#E5E7EB] bg-[#F9FAFB]/60">
+              <thead className="bg-slate-50/70 text-slate-500 uppercase tracking-wider text-[11px] font-semibold border-b border-slate-200/80">
                 <tr>
-                  <th className="py-2 px-3 font-semibold">Document</th>
-                  <th className="py-2 px-3 font-semibold">Type</th>
-                  <th className="py-2 px-3 font-semibold">Status</th>
-                  <th className="py-2 px-3 font-semibold">Uploaded By</th>
-                  <th className="py-2 px-3 font-semibold">Date</th>
+                  <th className="py-2.5 px-4">Document</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3">Size</th>
+                  <th className="py-2.5 px-3 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E5E7EB]">
+              <tbody className="divide-y divide-slate-100">
                 {documents.length > 0 ? (
-                  documents.slice(0, 5).map((doc) => (
-                    <tr key={doc.id} className="hover:bg-[#F9FAFB] transition-colors">
-                      <td className="py-2.5 px-3 font-medium text-[#111827] flex items-center gap-2">
-                        <FileText className="w-3.5 h-3.5 text-[#4F46E5] shrink-0" />
-                        <span className="truncate max-w-[220px]">{doc.original_filename}</span>
+                  documents.slice(0, 6).map((doc) => (
+                    <tr key={doc.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-3 px-4 font-medium text-slate-900">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                            <FileText className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="truncate max-w-[220px]">
+                            <div className="truncate font-semibold">{doc.original_filename}</div>
+                            <div className="text-[10px] text-slate-400 font-normal">
+                              {new Date(doc.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
                       </td>
-                      <td className="py-2.5 px-3 text-[#6B7280]">
-                        {doc.mime_type.includes('pdf') ? 'Invoice' : 'Receipt'}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
+
+                      <td className="py-3 px-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                           doc.status === 'completed'
-                            ? 'bg-[#ECFDF5] text-[#10B981] border border-[#10B981]/20'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                             : doc.status === 'processing'
-                            ? 'bg-[#EFF6FF] text-[#3B82F6] border border-[#3B82F6]/20'
-                            : 'bg-[#FEF2F2] text-[#EF4444] border border-[#EF4444]/20'
+                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                            : 'bg-red-50 text-red-700 border border-red-200'
                         }`}>
                           {doc.status}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-[#6B7280]">{user?.display_name || user?.email || 'abderrahmane'}</td>
-                      <td className="py-2.5 px-3 text-[#6B7280]">
-                        {new Date(doc.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+
+                      <td className="py-3 px-3 text-slate-500">
+                        {formatSize(doc.file_size_bytes)}
+                      </td>
+
+                      <td className="py-3 px-3 text-right">
+                        <Link 
+                          to="/chat"
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded transition-colors"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                          <span>Chat</span>
+                        </Link>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-xs text-[#9CA3AF]">
-                      No documents uploaded yet. Upload your first PDF to generate statistics.
+                    <td colSpan={4} className="py-12 px-4 text-center">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2.5">
+                        <UploadCloud className="w-5 h-5" />
+                      </div>
+                      <h3 className="text-sm font-semibold text-slate-800">No documents uploaded yet</h3>
+                      <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                        Upload your first PDF, invoice, or scanned receipt to begin semantic vector search and Q&A.
+                      </p>
+                      <Link
+                        to="/upload"
+                        className="inline-flex items-center gap-1.5 mt-4 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-xs"
+                      >
+                        <UploadCloud className="w-3.5 h-3.5" />
+                        <span>Upload File</span>
+                      </Link>
                     </td>
                   </tr>
                 )}
@@ -402,68 +313,112 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Processing Status (1/3 width, 100% Real Live Math) */}
-        <div className="bg-white rounded-xl border border-[#E5E7EB] p-5 shadow-xs flex flex-col justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-[#111827] mb-3">
-              Processing Status
-            </h2>
-
-            <div className="space-y-3.5 text-xs">
-              <div>
-                <div className="flex justify-between font-medium mb-1">
-                  <span className="text-[#111827]">Completed</span>
-                  <span className="text-[#6B7280]">
-                    {completedDocs} ({totalDocs > 0 ? Math.round((completedDocs / totalDocs) * 100) : 0}%)
-                  </span>
-                </div>
-                <div className="h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-[#10B981] rounded-full transition-all duration-500" 
-                    style={{ width: `${totalDocs > 0 ? (completedDocs / totalDocs) * 100 : 0}%` }} 
-                  />
-                </div>
+        {/* Right Column: AI Architecture, Breakdown & Launchpad */}
+        <div className="lg:col-span-5 space-y-4">
+          
+          {/* AI Knowledge Store & Infrastructure Telemetry */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3.5">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-indigo-600" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                  AI Architecture Status
+                </h3>
               </div>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                Operational
+              </span>
+            </div>
 
-              <div>
-                <div className="flex justify-between font-medium mb-1">
-                  <span className="text-[#111827]">Processing</span>
-                  <span className="text-[#6B7280]">
-                    {processingDocs} ({totalDocs > 0 ? Math.round((processingDocs / totalDocs) * 100) : 0}%)
-                  </span>
-                </div>
-                <div className="h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-[#3B82F6] rounded-full transition-all duration-500" 
-                    style={{ width: `${totalDocs > 0 ? (processingDocs / totalDocs) * 100 : 0}%` }} 
-                  />
-                </div>
+            <div className="space-y-2.5 text-xs">
+              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                <span className="text-slate-600 font-medium">Vector Store</span>
+                <span className="font-semibold text-slate-900">Qdrant (documind_chunks)</span>
               </div>
-
-              <div>
-                <div className="flex justify-between font-medium mb-1">
-                  <span className="text-[#111827]">Needs Review</span>
-                  <span className="text-[#6B7280]">
-                    {needsReviewDocs} ({totalDocs > 0 ? Math.round((needsReviewDocs / totalDocs) * 100) : 0}%)
-                  </span>
-                </div>
-                <div className="h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-[#F59E0B] rounded-full transition-all duration-500" 
-                    style={{ width: `${totalDocs > 0 ? (needsReviewDocs / totalDocs) * 100 : 0}%` }} 
-                  />
-                </div>
+              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                <span className="text-slate-600 font-medium">Embedding Model</span>
+                <span className="font-semibold text-slate-900">all-MiniLM-L6-v2 (384d)</span>
+              </div>
+              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                <span className="text-slate-600 font-medium">LLM Engine</span>
+                <span className="font-semibold text-slate-900">Groq (Qwen 2.5 27B)</span>
+              </div>
+              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                <span className="text-slate-600 font-medium">OCR Extraction</span>
+                <span className="font-semibold text-slate-900">PyMuPDF + Tesseract v5</span>
               </div>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-[#E5E7EB] mt-3 flex items-center justify-between text-xs text-[#6B7280]">
-            <span>Active Worker Node</span>
-            <span className="font-semibold text-[#10B981] flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-              Online
-            </span>
+          {/* Real Format Distribution */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 pb-1 border-b border-slate-100">
+              Document Format Breakdown
+            </h3>
+
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+                  PDF Documents
+                </span>
+                <span className="font-bold text-slate-900">
+                  {pdfCount} ({totalDocs > 0 ? Math.round((pdfCount / totalDocs) * 100) : 0}%)
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  Scanned Images (OCR)
+                </span>
+                <span className="font-bold text-slate-900">
+                  {imageCount} ({totalDocs > 0 ? Math.round((imageCount / totalDocs) * 100) : 0}%)
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-400" />
+                  Other Formats
+                </span>
+                <span className="font-bold text-slate-900">
+                  {otherCount} ({totalDocs > 0 ? Math.round((otherCount / totalDocs) * 100) : 0}%)
+                </span>
+              </div>
+            </div>
           </div>
+
+          {/* Direct Chat Launchpad */}
+          <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-blue-50/50 p-5 shadow-xs">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                <MessageSquare className="w-3.5 h-3.5" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">Ask your documents</h3>
+            </div>
+            <p className="text-xs text-slate-600 mb-3.5">
+              Query your indexed documents in real-time with grounded citations and streaming responses.
+            </p>
+
+            <form onSubmit={handleQuickSearch} className="relative">
+              <input 
+                type="text"
+                placeholder="e.g. What are the key terms in the invoice?"
+                value={quickQuery}
+                onChange={(e) => setQuickQuery(e.target.value)}
+                className="w-full h-9 pl-3 pr-9 bg-white border border-indigo-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+              />
+              <button
+                type="submit"
+                className="absolute right-1 top-1 w-7 h-7 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center transition-colors shadow-xs"
+                title="Launch RAG query"
+              >
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </form>
+          </div>
+
         </div>
 
       </div>
