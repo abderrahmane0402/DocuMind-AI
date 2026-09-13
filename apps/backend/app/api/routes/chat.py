@@ -1,5 +1,7 @@
 import requests
+import json
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.api.deps import get_db, get_current_user
@@ -13,21 +15,25 @@ embed_model = SentenceTransformer('all-MiniLM-L6-v2')
 
 router = APIRouter()
 
+class Message(BaseModel):
+    role: str
+    content: str
+
 class ChatRequest(BaseModel):
-    query: str
+    messages: list[Message]
 
-class ChatResponse(BaseModel):
-    answer: str
-    sources: list[dict]
-
-@router.post("/", response_model=ChatResponse)
-def chat_with_docs(
+@router.post("/stream")
+def chat_with_docs_stream(
     req: ChatRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # 1. Embed the query
-    query_vector = embed_model.encode(req.query).tolist()
+    if not req.messages:
+        raise HTTPException(status_code=400, detail="No messages provided.")
+
+    # 1. Get the latest user query to search Qdrant
+    latest_query = req.messages[-1].content
+    query_vector = embed_model.encode(latest_query).tolist()
     
     # 2. Search Qdrant
     qdrant = get_qdrant_client()
@@ -40,30 +46,31 @@ def chat_with_docs(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Qdrant search failed: {e}")
         
-    if not results.points:
-        return {"answer": "I couldn't find any relevant documents to answer your question.", "sources": []}
-        
     # 3. Construct context and sources
     context_text = ""
     sources = []
     
-    for i, res in enumerate(results.points):
-        text = res.payload.get("text_content", "")
-        page = res.payload.get("page_number", "?")
-        doc_id = res.payload.get("document_id", "")
-        
-        context_text += f"\n--- Source {i+1} (Page {page}) ---\n{text}\n"
-        sources.append({
-            "document_id": doc_id,
-            "page": page,
-            "score": res.score
-        })
-        
-    # 4. Construct Prompt
-    system_prompt = "You are DocuMind AI, an intelligent assistant. Answer the user's question based strictly on the provided context from their documents. If the answer is not in the context, say 'I don't know based on the provided documents'."
-    user_prompt = f"Context:\n{context_text}\n\nQuestion: {req.query}"
+    if results.points:
+        for i, res in enumerate(results.points):
+            text = res.payload.get("text_content", "")
+            page = res.payload.get("page_number", "?")
+            doc_id = res.payload.get("document_id", "")
+            
+            context_text += f"\n--- Source {i+1} (Page {page}) ---\n{text}\n"
+            sources.append({
+                "document_id": doc_id,
+                "page": page,
+                "score": res.score
+            })
+            
+    system_prompt = "You are DocuMind AI, an intelligent assistant. Answer the user's question based strictly on the provided context from their documents. If the answer is not in the context, just say you don't know based on the provided documents. Context:\n" + context_text
+
+    # 4. Construct Messages array for Groq
+    messages_for_llm = [{"role": "system", "content": system_prompt}]
+    for m in req.messages:
+        messages_for_llm.append({"role": m.role, "content": m.content})
     
-    # 5. Call Groq API with verify=False to bypass SSL proxy
+    # 5. Call Groq API with streaming
     headers = {
         "Authorization": f"Bearer {settings.GROQ_API_KEY}",
         "Content-Type": "application/json"
@@ -71,31 +78,44 @@ def chat_with_docs(
     
     data = {
         "model": "qwen/qwen3.8-27b",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        "temperature": 0.2
+        "messages": messages_for_llm,
+        "temperature": 0.2,
+        "stream": True
     }
     
-    try:
-        import urllib3
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    def generate_stream():
+        # Yield the sources first as a special event
+        yield f"data: {json.dumps({'type': 'sources', 'sources': sources})}\n\n"
         
-        response = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers=headers,
-            json=data,
-            verify=False
-        )
-        response.raise_for_status()
-        resp_json = response.json()
-        answer = resp_json["choices"][0]["message"]["content"]
-    except Exception as e:
-        print(f"LLM API Error: {e}")
-        # Print actual error text if available from Groq
-        if hasattr(e, 'response') and e.response is not None:
-            print(f"Response: {e.response.text}")
-        raise HTTPException(status_code=500, detail="Failed to communicate with LLM API.")
+        try:
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
+            with requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers=headers,
+                json=data,
+                verify=False,
+                stream=True
+            ) as response:
+                response.raise_for_status()
+                for line in response.iter_lines():
+                    if line:
+                        line_text = line.decode('utf-8')
+                        if line_text.startswith("data: "):
+                            data_str = line_text[6:]
+                            if data_str == "[DONE]":
+                                break
+                            chunk = json.loads(data_str)
+                            if "choices" in chunk and len(chunk["choices"]) > 0:
+                                delta = chunk["choices"][0].get("delta", {})
+                                if "content" in delta:
+                                    content = delta["content"]
+                                    yield f"data: {json.dumps({'type': 'content', 'content': content})}\n\n"
+        except Exception as e:
+            print(f"LLM API Error: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'content': 'Failed to communicate with LLM API.'})}\n\n"
+            
+        yield "data: [DONE]\n\n"
         
-    return {"answer": answer, "sources": sources}
+    return StreamingResponse(generate_stream(), media_type="text/event-stream")

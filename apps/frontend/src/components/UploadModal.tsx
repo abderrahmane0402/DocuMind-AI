@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { UploadCloud, X, FileText, AlertCircle, Loader2 } from 'lucide-react';
 
 interface UploadModalProps {
   onClose: () => void;
@@ -21,7 +22,7 @@ export default function UploadModal({ onClose, onUploadSuccess }: UploadModalPro
   };
 
   const handleUpload = async () => {
-    if (!file || !user || !user.workspaces[0]) return;
+    if (!file || !user || !user.workspaces?.[0]) return;
     
     setIsUploading(true);
     setError(null);
@@ -54,56 +55,84 @@ export default function UploadModal({ onClose, onUploadSuccess }: UploadModalPro
   };
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
-      <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '8px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>Upload Document</h2>
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         
-        {error && (
-          <div style={{ padding: '0.75rem', backgroundColor: '#fee2e2', color: '#b91c1c', borderRadius: '4px', marginBottom: '1rem', fontSize: '0.875rem' }}>
-            {error}
-          </div>
-        )}
-
-        <div 
-          style={{ border: '2px dashed #d1d5db', borderRadius: '8px', padding: '2rem', textAlign: 'center', marginBottom: '1.5rem', cursor: 'pointer', backgroundColor: '#f9fafb' }}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            style={{ display: 'none' }} 
-            accept="application/pdf,image/png,image/jpeg,image/jpg"
-          />
-          {file ? (
-            <div>
-              <p style={{ fontWeight: '500' }}>{file.name}</p>
-              <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-            </div>
-          ) : (
-            <div>
-              <p style={{ fontWeight: '500' }}>Click or drag file to this area to upload</p>
-              <p style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.5rem' }}>Support for a single PDF, PNG, or JPG (Max 20MB).</p>
-            </div>
-          )}
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-slate-900">Upload Document</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+        <div className="p-6 space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 text-red-700 text-xs rounded-lg border border-red-200 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Dropzone */}
+          <div 
+            onClick={() => fileInputRef.current?.click()}
+            className="border-2 border-dashed border-slate-200 hover:border-blue-500 rounded-xl p-8 text-center cursor-pointer bg-slate-50/50 hover:bg-blue-50/30 transition-colors flex flex-col items-center justify-center"
+          >
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+              className="hidden" 
+              accept="application/pdf,image/png,image/jpeg,image/jpg"
+            />
+            
+            <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-3">
+              <UploadCloud className="w-6 h-6" />
+            </div>
+
+            {file ? (
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-slate-800 flex items-center gap-1.5 justify-center">
+                  <FileText className="w-4 h-4 text-blue-600" />
+                  {file.name}
+                </p>
+                <p className="text-xs text-slate-500">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm font-medium text-slate-700">Click or drag a document here</p>
+                <p className="text-xs text-slate-400 mt-1">PDFs, scanned images, or receipts (Max 20MB)</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
           <button 
             onClick={onClose}
             disabled={isUploading}
-            style={{ padding: '0.5rem 1rem', background: 'transparent', border: '1px solid #d1d5db', borderRadius: '4px', cursor: 'pointer' }}
+            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors"
           >
             Cancel
           </button>
           <button 
             onClick={handleUpload}
             disabled={!file || isUploading}
-            style={{ padding: '0.5rem 1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: !file || isUploading ? 'not-allowed' : 'pointer', opacity: !file || isUploading ? 0.7 : 1 }}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-xs"
           >
-            {isUploading ? 'Uploading...' : 'Start Upload'}
+            {isUploading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              'Start Processing'
+            )}
           </button>
         </div>
+
       </div>
     </div>
   );
