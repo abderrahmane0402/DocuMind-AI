@@ -5,6 +5,7 @@ interface User {
   email: string;
   display_name: string;
   global_status: string;
+  workspaces: Array<{id: string, name: string}>;
 }
 
 interface AuthContextType {
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (token) {
       localStorage.setItem('token', token);
+      setIsLoading(true);
       fetchUser();
     } else {
       localStorage.removeItem('token');
@@ -53,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = (newToken: string) => {
+    setIsLoading(true);
     setToken(newToken);
   };
 

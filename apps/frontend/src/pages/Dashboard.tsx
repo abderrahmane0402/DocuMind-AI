@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Dashboard() {
@@ -15,6 +16,12 @@ export default function Dashboard() {
           <li>User ID: {user?.id}</li>
           <li>Status: {user?.global_status}</li>
         </ul>
+        
+        <div style={{ marginTop: '2rem' }}>
+          <Link to="/documents" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: 'bold' }}>
+            Go to Documents Management &rarr;
+          </Link>
+        </div>
       </div>
 
       <button onClick={logout} style={{ marginTop: 20, padding: '10px 20px' }}>

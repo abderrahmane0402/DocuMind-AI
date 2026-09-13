@@ -10,6 +10,3 @@ class Base(DeclarativeBase):
     def __tablename__(cls) -> str:
         return cls.__name__.lower()
 
-from app.models.user import User
-from app.models.workspace import Workspace
-from app.models.membership import Membership

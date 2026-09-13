@@ -51,4 +51,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)):
+    # Add the user's workspaces manually so the schema can validate them
+    current_user.workspaces = [m.workspace for m in current_user.memberships]
     return current_user
