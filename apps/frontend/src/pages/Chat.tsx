@@ -136,10 +136,10 @@ export default function Chat() {
   };
 
   return (
-    <div className="h-[calc(100vh-100px)] flex gap-5 overflow-hidden">
+    <div className="h-[calc(100vh-80px)] flex gap-5 overflow-hidden">
       
-      {/* Panel 1: Conversation List */}
-      <div className="hidden xl:flex w-[220px] bg-white rounded-xl border border-[#E5E7EB] p-3.5 flex-col justify-between shrink-0 shadow-xs">
+      {/* Panel 1: Conversation List (Compact 200px) */}
+      <div className="hidden xl:flex w-[200px] bg-white rounded-xl border border-[#E5E7EB] p-3.5 flex-col justify-between shrink-0 shadow-xs">
         <div className="space-y-3">
           <button 
             onClick={() => {
@@ -180,14 +180,18 @@ export default function Chat() {
         
         {/* Chat Canvas Header */}
         <div className="h-14 px-6 border-b border-[#E5E7EB] flex items-center justify-between shrink-0 bg-[#F9FAFB]/50">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#4F46E5]" />
-            <h2 className="text-sm font-bold text-[#111827]">RAG Assistant</h2>
-            <span className="text-xs text-[#6B7280]">· Groq Qwen-3.8-27B</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-[#111827] leading-none">RAG Assistant</h2>
+              <span className="text-[11px] text-[#6B7280]">Powered by Groq Qwen-3.8-27B & Qdrant</span>
+            </div>
           </div>
-          <div className="text-xs text-[#10B981] font-semibold flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#10B981]" />
-            Context Ready
+          <div className="text-xs text-[#10B981] font-semibold flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+            <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+            Vector Context Ready
           </div>
         </div>
 
@@ -197,14 +201,14 @@ export default function Chat() {
             <div key={idx} className={`flex gap-3.5 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               
               {m.role === 'ai' && (
-                <div className="w-8 h-8 rounded-lg bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
-                  <Bot className="w-4 h-4" />
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5 shadow-xs border border-indigo-100">
+                  <Bot className="w-5 h-5" />
                 </div>
               )}
 
-              {/* Message bubble sizing: widened for comfortable reading */}
-              <div className={`space-y-2 ${m.role === 'user' ? 'max-w-[78%]' : 'max-w-[88%]'}`}>
-                <div className={`px-5 py-3.5 rounded-xl text-[14px] leading-[23px] ${
+              {/* Message bubble sizing: large & spacious */}
+              <div className={`space-y-2 ${m.role === 'user' ? 'max-w-[82%]' : 'max-w-[92%]'}`}>
+                <div className={`px-5 py-4 rounded-2xl text-[15px] leading-[25px] ${
                   m.role === 'user'
                     ? 'bg-[#EEF2FF] text-[#111827] border border-[#C7D2FE]'
                     : 'bg-white text-[#111827] border border-[#E5E7EB] shadow-xs'
@@ -212,8 +216,8 @@ export default function Chat() {
                   <p className="whitespace-pre-wrap">
                     {m.content || (isLoading && idx === messages.length - 1 ? (
                       <span className="flex items-center gap-2 text-[#6B7280]">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#4F46E5]" />
-                        Searching vector database...
+                        <Loader2 className="w-4 h-4 animate-spin text-[#4F46E5]" />
+                        Searching vector database and generating answer...
                       </span>
                     ) : '')}
                   </p>
@@ -221,10 +225,10 @@ export default function Chat() {
 
                 {/* Inline Citation Chips */}
                 {m.sources && m.sources.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
                     {m.sources.map((s, i) => (
-                      <span key={i} className="inline-flex items-center gap-1 text-[11px] font-semibold bg-[#F9FAFB] text-[#4F46E5] border border-[#E5E7EB] px-2 py-0.5 rounded-md hover:bg-[#EEF2FF] cursor-pointer transition-colors">
-                        <FileText className="w-3 h-3" />
+                      <span key={i} className="inline-flex items-center gap-1.5 text-xs font-semibold bg-[#F9FAFB] text-[#4F46E5] border border-[#E5E7EB] px-2.5 py-1 rounded-lg hover:bg-[#EEF2FF] cursor-pointer transition-colors">
+                        <FileText className="w-3.5 h-3.5" />
                         Page {s.page}
                       </span>
                     ))}
@@ -233,8 +237,8 @@ export default function Chat() {
               </div>
 
               {m.role === 'user' && (
-                <div className="w-8 h-8 rounded-lg bg-[#111827] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
-                  <UserIcon className="w-4 h-4" />
+                <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                  <UserIcon className="w-5 h-5" />
                 </div>
               )}
             </div>
@@ -242,21 +246,21 @@ export default function Chat() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Composer (Sticky at bottom) */}
+        {/* Composer (Sticky at bottom, taller input) */}
         <div className="p-4 border-t border-[#E5E7EB] bg-white shrink-0">
           <form onSubmit={sendMessage} className="relative">
             <input 
               type="text" 
-              placeholder="Ask a question about your documents..."
+              placeholder="Ask a question about your uploaded documents..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={isLoading}
-              className="w-full h-12 pl-4 pr-12 bg-[#F9FAFB] border border-[#D1D5DB] rounded-xl text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#4F46E5] focus:ring-2 focus:ring-[#EEF2FF]"
+              className="w-full h-13 pl-5 pr-14 bg-[#F9FAFB] border border-[#D1D5DB] rounded-xl text-[15px] text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#4F46E5] focus:ring-2 focus:ring-[#EEF2FF]"
             />
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-[#4F46E5] hover:bg-[#4338CA] text-white flex items-center justify-center transition-colors disabled:opacity-40"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-[#4F46E5] hover:bg-[#4338CA] text-white flex items-center justify-center transition-colors disabled:opacity-40"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -268,8 +272,8 @@ export default function Chat() {
 
       </div>
 
-      {/* Panel 3: Sources Evidence Panel */}
-      <div className="hidden lg:flex w-[290px] xl:w-[310px] bg-white rounded-xl border border-[#E5E7EB] p-4 flex-col shrink-0 shadow-xs overflow-y-auto">
+      {/* Panel 3: Sources Evidence Panel (Compact 280px) */}
+      <div className="hidden lg:flex w-[280px] bg-white rounded-xl border border-[#E5E7EB] p-4 flex-col shrink-0 shadow-xs overflow-y-auto">
         <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB] mb-4">
           <h3 className="text-sm font-bold text-[#111827]">Sources & Evidence</h3>
           <span className="text-[11px] font-semibold text-[#4F46E5] bg-[#EEF2FF] px-2 py-0.5 rounded">
