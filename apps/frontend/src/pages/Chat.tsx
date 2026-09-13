@@ -136,10 +136,10 @@ export default function Chat() {
   };
 
   return (
-    <div className="h-[calc(100vh-100px)] flex gap-6 overflow-hidden">
+    <div className="h-[calc(100vh-100px)] flex gap-5 overflow-hidden">
       
-      {/* Panel 1: Conversation List (Section 9.7: 260px) */}
-      <div className="hidden xl:flex w-[260px] bg-white rounded-xl border border-[#E5E7EB] p-4 flex-col justify-between shrink-0 shadow-xs">
+      {/* Panel 1: Conversation List */}
+      <div className="hidden xl:flex w-[220px] bg-white rounded-xl border border-[#E5E7EB] p-3.5 flex-col justify-between shrink-0 shadow-xs">
         <div className="space-y-3">
           <button 
             onClick={() => {
@@ -175,8 +175,8 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* Panel 2: Fluid Chat Canvas (Section 9.7: minimum 520px) */}
-      <div className="flex-1 bg-white rounded-xl border border-[#E5E7EB] shadow-xs flex flex-col min-w-[320px] overflow-hidden">
+      {/* Panel 2: Expanded Fluid Chat Canvas */}
+      <div className="flex-1 bg-white rounded-xl border border-[#E5E7EB] shadow-xs flex flex-col min-w-0 overflow-hidden">
         
         {/* Chat Canvas Header */}
         <div className="h-14 px-6 border-b border-[#E5E7EB] flex items-center justify-between shrink-0 bg-[#F9FAFB]/50">
@@ -192,7 +192,7 @@ export default function Chat() {
         </div>
 
         {/* Message Stream */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
           {messages.map((m, idx) => (
             <div key={idx} className={`flex gap-3.5 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               
@@ -202,9 +202,9 @@ export default function Chat() {
                 </div>
               )}
 
-              {/* Message bubble sizing from Section 9.7: User 70% max, Assistant 82% max */}
-              <div className={`space-y-2 ${m.role === 'user' ? 'max-w-[70%]' : 'max-w-[82%]'}`}>
-                <div className={`px-4 py-3 rounded-xl text-[14px] leading-[22px] ${
+              {/* Message bubble sizing: widened for comfortable reading */}
+              <div className={`space-y-2 ${m.role === 'user' ? 'max-w-[78%]' : 'max-w-[88%]'}`}>
+                <div className={`px-5 py-3.5 rounded-xl text-[14px] leading-[23px] ${
                   m.role === 'user'
                     ? 'bg-[#EEF2FF] text-[#111827] border border-[#C7D2FE]'
                     : 'bg-white text-[#111827] border border-[#E5E7EB] shadow-xs'
@@ -219,7 +219,7 @@ export default function Chat() {
                   </p>
                 </div>
 
-                {/* Inline Citation Chips (Section 9.7) */}
+                {/* Inline Citation Chips */}
                 {m.sources && m.sources.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {m.sources.map((s, i) => (
@@ -242,7 +242,7 @@ export default function Chat() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Composer (Section 9.7: Sticky at bottom, min height 56px) */}
+        {/* Composer (Sticky at bottom) */}
         <div className="p-4 border-t border-[#E5E7EB] bg-white shrink-0">
           <form onSubmit={sendMessage} className="relative">
             <input 
@@ -268,8 +268,8 @@ export default function Chat() {
 
       </div>
 
-      {/* Panel 3: Sources Evidence Panel (Section 9.7: 340px) */}
-      <div className="hidden lg:flex w-[340px] bg-white rounded-xl border border-[#E5E7EB] p-5 flex-col shrink-0 shadow-xs overflow-y-auto">
+      {/* Panel 3: Sources Evidence Panel */}
+      <div className="hidden lg:flex w-[290px] xl:w-[310px] bg-white rounded-xl border border-[#E5E7EB] p-4 flex-col shrink-0 shadow-xs overflow-y-auto">
         <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB] mb-4">
           <h3 className="text-sm font-bold text-[#111827]">Sources & Evidence</h3>
           <span className="text-[11px] font-semibold text-[#4F46E5] bg-[#EEF2FF] px-2 py-0.5 rounded">
