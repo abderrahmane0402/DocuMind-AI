@@ -8,6 +8,7 @@ interface Document {
   mime_type: string;
   file_size_bytes: number;
   status: string;
+  progress: number;
   created_at: string;
 }
 
@@ -69,12 +70,20 @@ export default function Documents() {
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Documents</h1>
-        <button 
-          onClick={() => setIsUploadOpen(true)}
-          style={{ padding: '0.5rem 1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-        >
-          Upload Document
-        </button>
+        <div>
+          <button 
+            onClick={fetchDocuments}
+            style={{ padding: '0.5rem 1rem', background: 'transparent', color: '#4b5563', border: '1px solid #d1d5db', borderRadius: '4px', cursor: 'pointer', marginRight: '1rem' }}
+          >
+            Refresh
+          </button>
+          <button 
+            onClick={() => setIsUploadOpen(true)}
+            style={{ padding: '0.5rem 1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          >
+            Upload Document
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -102,7 +111,7 @@ export default function Documents() {
                 <td style={{ padding: '1rem', borderBottom: '1px solid #e5e7eb', color: '#6b7280', fontSize: '0.875rem' }}>{formatSize(doc.file_size_bytes)}</td>
                 <td style={{ padding: '1rem', borderBottom: '1px solid #e5e7eb' }}>
                   <span style={{ padding: '0.25rem 0.5rem', background: '#dbeafe', color: '#1e40af', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '500' }}>
-                    {doc.status}
+                    {doc.status} ({Math.round(doc.progress * 100)}%)
                   </span>
                 </td>
                 <td style={{ padding: '1rem', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>

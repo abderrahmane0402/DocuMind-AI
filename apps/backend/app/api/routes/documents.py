@@ -59,6 +59,9 @@ async def upload_document(
     db.commit()
     db.refresh(doc)
     
+    from app.workers.document_tasks import process_document_task
+    process_document_task.delay(str(doc.id))
+    
     return doc
 
 @router.get("/", response_model=List[DocumentResponse])
@@ -73,6 +76,22 @@ def list_documents(
         
     docs = db.execute(select(Document).filter_by(workspace_id=workspace_id)).scalars().all()
     return docs
+
+@router.get("/{document_id}/status")
+def get_document_status(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    doc = db.execute(select(Document).filter_by(id=document_id)).scalar_one_or_none()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+        
+    membership = db.execute(select(Membership).filter_by(workspace_id=doc.workspace_id, user_id=current_user.id)).scalar_one_or_none()
+    if not membership:
+        raise HTTPException(status_code=403, detail="Not a member of this workspace")
+        
+    return {"status": doc.status, "progress": doc.progress}
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_document(
