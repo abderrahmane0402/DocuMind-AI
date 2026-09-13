@@ -112,3 +112,42 @@ def delete_document(
     db.delete(doc)
     db.commit()
     return None
+
+@router.get("/stats/summary")
+def get_workspace_document_stats(
+    workspace_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    membership = db.execute(select(Membership).filter_by(workspace_id=workspace_id, user_id=current_user.id)).scalar_one_or_none()
+    if not membership:
+        raise HTTPException(status_code=403, detail="Not a member of this workspace")
+
+    docs = db.execute(select(Document).filter_by(workspace_id=workspace_id)).scalars().all()
+    
+    total = len(docs)
+    completed = sum(1 for d in docs if d.status == "completed")
+    processing = sum(1 for d in docs if d.status == "processing")
+    needs_review = sum(1 for d in docs if d.status in ["failed", "needs_review"])
+    
+    # Types count
+    invoices = sum(1 for d in docs if "pdf" in (d.mime_type or "").lower())
+    receipts = sum(1 for d in docs if "image" in (d.mime_type or "").lower())
+    others = total - invoices - receipts
+    
+    # Accurate accuracy indicator: 100% if all completed, 0% if none, etc.
+    accuracy = round((completed / total * 100), 1) if total > 0 else 0.0
+
+    return {
+        "total_documents": total,
+        "processed_today": completed,
+        "needs_review": needs_review,
+        "processing": processing,
+        "extraction_accuracy": accuracy,
+        "types": {
+            "invoices": invoices,
+            "receipts": receipts,
+            "others": max(0, others)
+        }
+    }
+

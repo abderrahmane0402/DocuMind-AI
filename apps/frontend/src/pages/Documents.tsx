@@ -82,17 +82,7 @@ export default function Documents() {
     return 'Report';
   };
 
-  // Static fallback documents matching design board if backend is empty
-  const displayDocs = documents.length > 0 ? documents : [
-    { id: '1', original_filename: 'INV-2024-00123.pdf', mime_type: 'application/pdf', file_size_bytes: 245000, status: 'completed', progress: 100, created_at: '2024-05-18' },
-    { id: '2', original_filename: 'INV-2024-00122.pdf', mime_type: 'application/pdf', file_size_bytes: 188000, status: 'completed', progress: 100, created_at: '2024-05-18' },
-    { id: '3', original_filename: 'Contract_Acme_2024.pdf', mime_type: 'application/pdf', file_size_bytes: 1200000, status: 'completed', progress: 100, created_at: '2024-05-17' },
-    { id: '4', original_filename: 'Receipt_0425.png', mime_type: 'image/png', file_size_bytes: 512000, status: 'processing', progress: 65, created_at: '2024-05-17' },
-    { id: '5', original_filename: 'Policy_Handbook.pdf', mime_type: 'application/pdf', file_size_bytes: 3400000, status: 'completed', progress: 100, created_at: '2024-05-17' },
-    { id: '6', original_filename: 'Report_Q1_2024.pdf', mime_type: 'application/pdf', file_size_bytes: 2100000, status: 'completed', progress: 100, created_at: '2024-05-17' },
-    { id: '7', original_filename: 'INV-2024-00121.pdf', mime_type: 'application/pdf', file_size_bytes: 223000, status: 'needs_review', progress: 90, created_at: '2024-05-16' },
-    { id: '8', original_filename: 'Receipt_0424.png', mime_type: 'image/png', file_size_bytes: 687000, status: 'completed', progress: 100, created_at: '2024-05-16' },
-  ];
+  const displayDocs = documents;
 
   const filtered = displayDocs.filter(d => {
     const matchesSearch = d.original_filename.toLowerCase().includes(searchQuery.toLowerCase());
@@ -282,7 +272,7 @@ export default function Documents() {
         {/* Pagination Section (Bottom left count, Bottom right pages) */}
         <div className="h-14 px-6 border-t border-[#E5E7EB] flex items-center justify-between text-xs text-[#6B7280] bg-[#F9FAFB]/50">
           <div>
-            Showing <span className="font-semibold text-[#111827]">1-8</span> of <span className="font-semibold text-[#111827]">156</span> documents
+            Showing <span className="font-semibold text-[#111827]">{filtered.length > 0 ? `1-${filtered.length}` : '0'}</span> of <span className="font-semibold text-[#111827]">{documents.length}</span> documents
           </div>
 
           <div className="flex items-center gap-1">
@@ -291,16 +281,6 @@ export default function Documents() {
             </button>
             <button className="w-7 h-7 rounded-md bg-[#4F46E5] text-white font-medium text-xs">
               1
-            </button>
-            <button className="w-7 h-7 rounded-md border border-[#D1D5DB] bg-white text-[#111827] font-medium text-xs hover:bg-[#F9FAFB]">
-              2
-            </button>
-            <button className="w-7 h-7 rounded-md border border-[#D1D5DB] bg-white text-[#111827] font-medium text-xs hover:bg-[#F9FAFB]">
-              3
-            </button>
-            <span className="px-1 text-[#9CA3AF]">...</span>
-            <button className="w-7 h-7 rounded-md border border-[#D1D5DB] bg-white text-[#111827] font-medium text-xs hover:bg-[#F9FAFB]">
-              20
             </button>
             <button className="p-1.5 rounded-md border border-[#D1D5DB] text-[#6B7280] hover:bg-white">
               <ChevronRight className="w-3.5 h-3.5" />
