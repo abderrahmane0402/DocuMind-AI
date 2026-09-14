@@ -16,4 +16,4 @@ class DocumentChunk(Base):
     # Optional embeddings placeholder for Phase 6
     # embedding = Column(Vector(...))
     
-    document = relationship("Document", backref="chunks")
+    document = relationship("Document", back_populates="chunks")

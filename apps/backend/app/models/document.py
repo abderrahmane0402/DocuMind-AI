@@ -40,3 +40,4 @@ class Document(Base):
     # Relationships
     workspace = relationship("Workspace", backref="documents")
     uploader = relationship("User")
+    chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan", passive_deletes=True)
