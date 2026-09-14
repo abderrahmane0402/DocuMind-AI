@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.api.router import api_router
 from app.core.qdrant import init_qdrant
+import app.models  # Pre-register all SQLAlchemy models and relationships
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

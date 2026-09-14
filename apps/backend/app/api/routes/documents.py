@@ -34,6 +34,26 @@ async def upload_document(
     if file.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(status_code=400, detail="File type not allowed")
         
+    # Security: Verify real file magic bytes (prevent executable/trojan disguised as PDF)
+    header = await file.read(8)
+    await file.seek(0)
+    
+    # Check for executable headers (MZ for Windows .exe/.dll, ELF for Linux binaries)
+    if header.startswith(b'MZ') or header.startswith(b'\x7fELF'):
+        raise HTTPException(status_code=400, detail="Security violation: Executable files are strictly forbidden")
+        
+    # Validate signature matches expected document type
+    is_valid_pdf = header.startswith(b'%PDF-')
+    is_valid_png = header.startswith(b'\x89PNG\r\n\x1a\n')
+    is_valid_jpeg = header.startswith(b'\xff\xd8\xff')
+    
+    if file.content_type == "application/pdf" and not is_valid_pdf:
+        raise HTTPException(status_code=400, detail="Invalid PDF file format or corrupted header")
+    elif file.content_type in ["image/jpeg", "image/jpg"] and not is_valid_jpeg:
+        raise HTTPException(status_code=400, detail="Invalid JPEG image format")
+    elif file.content_type == "image/png" and not is_valid_png:
+        raise HTTPException(status_code=400, detail="Invalid PNG image format")
+        
     storage_name, sha256_hash, file_size = await storage.save_upload_file(file)
     
     if file_size > MAX_FILE_SIZE:
