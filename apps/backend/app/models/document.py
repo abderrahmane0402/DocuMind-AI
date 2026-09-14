@@ -1,9 +1,13 @@
+from typing import TYPE_CHECKING
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.document_chunk import DocumentChunk
 
 class Document(Base):
     __tablename__ = "documents"
