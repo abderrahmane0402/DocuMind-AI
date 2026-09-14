@@ -16,7 +16,7 @@ from app.core.config import settings
 router = APIRouter()
 
 ALLOWED_MIME_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/jpg"]
-MAX_FILE_SIZE = 20 * 1024 * 1024 # 20 MB
+MAX_FILE_SIZE = 50 * 1024 * 1024 # 50 MB
 
 @router.post("/", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
