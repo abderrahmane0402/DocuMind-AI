@@ -11,11 +11,22 @@
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![Qdrant](https://img.shields.io/badge/Qdrant-Vector_DB-DC2626?logo=qdrant&logoColor=white)](https://qdrant.tech)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-DocuMind%20AI-4F46E5?style=for-the-badge&logo=google-chrome&logoColor=white)](https://sabkari-dev.ddns.net/DocuMindAi/)
 
 Transform complex documents, contracts, and financial statements into instantly queryable insights using high-speed vector retrieval and advanced LLM reasoning.
 
-[Features](#-key-features) • [Architecture](#-architecture) • [Quickstart](#-quickstart-with-docker) • [Tech Stack](#-tech-stack) • [License](#-license)
+🌐 **Live Demo:** [https://sabkari-dev.ddns.net/DocuMindAi/](https://sabkari-dev.ddns.net/DocuMindAi/)
 
+[Features](#-key-features) • [Preview](#-preview) • [Architecture](#-architecture) • [Quickstart](#-quickstart-with-docker) • [Tech Stack](#-tech-stack) • [License](#-license)
+
+</div>
+
+---
+
+## 🖼️ Preview
+
+<div align="center">
+  <img src="acceuil.png" alt="DocuMind AI Dashboard Preview" width="900" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);" />
 </div>
 
 ---
