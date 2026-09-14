@@ -10,6 +10,8 @@ import {
   Sparkles,
   Trash2
 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { API_BASE_URL } from '../config';
 
 interface Message {
@@ -336,14 +338,62 @@ export default function Chat() {
                     ? 'bg-[#EEF2FF] text-[#111827] border border-[#C7D2FE]'
                     : 'bg-white text-[#111827] border border-[#E5E7EB] shadow-xs'
                 }`}>
-                  <p className="whitespace-pre-wrap">
-                    {m.content || (isLoading && idx === messages.length - 1 ? (
-                      <span className="flex items-center gap-2 text-[#6B7280]">
-                        <Loader2 className="w-4 h-4 animate-spin text-[#4F46E5]" />
-                        Searching vector database and generating answer...
-                      </span>
-                    ) : '')}
-                  </p>
+                  {m.role === 'user' ? (
+                    <p className="whitespace-pre-wrap">{m.content}</p>
+                  ) : (
+                    <div>
+                      {m.content ? (
+                        <div className="prose prose-slate max-w-none space-y-3 text-[#111827]">
+                          <ReactMarkdown 
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              h1: ({node, ...props}) => <h1 className="text-xl font-bold mt-4 mb-2 text-[#0F172A]" {...props} />,
+                              h2: ({node, ...props}) => <h2 className="text-lg font-bold mt-3 mb-2 text-[#0F172A] border-b border-slate-100 pb-1" {...props} />,
+                              h3: ({node, ...props}) => <h3 className="text-base font-semibold mt-2 mb-1 text-[#1E293B]" {...props} />,
+                              p: ({node, ...props}) => <p className="mb-2.5 leading-relaxed" {...props} />,
+                              ul: ({node, ...props}) => <ul className="list-disc list-inside space-y-1 my-2 pl-2 text-slate-800" {...props} />,
+                              ol: ({node, ...props}) => <ol className="list-decimal list-inside space-y-1 my-2 pl-2 text-slate-800" {...props} />,
+                              li: ({node, ...props}) => <li className="leading-relaxed" {...props} />,
+                              strong: ({node, ...props}) => <strong className="font-semibold text-slate-900" {...props} />,
+                              code: ({node, inline, className, children, ...props}: any) => {
+                                return inline ? (
+                                  <code className="bg-slate-100 text-indigo-700 font-mono text-xs px-1.5 py-0.5 rounded border border-slate-200" {...props}>
+                                    {children}
+                                  </code>
+                                ) : (
+                                  <pre className="bg-slate-900 text-slate-100 p-3.5 rounded-xl font-mono text-xs overflow-x-auto my-3 border border-slate-800 shadow-inner">
+                                    <code {...props}>{children}</code>
+                                  </pre>
+                                );
+                              },
+                              table: ({node, ...props}) => (
+                                <div className="overflow-x-auto my-3 border border-slate-200 rounded-xl shadow-xs">
+                                  <table className="w-full text-left border-collapse text-xs sm:text-sm" {...props} />
+                                </div>
+                              ),
+                              thead: ({node, ...props}) => <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold" {...props} />,
+                              tbody: ({node, ...props}) => <tbody className="divide-y divide-slate-100" {...props} />,
+                              tr: ({node, ...props}) => <tr className="hover:bg-slate-50/60 transition-colors" {...props} />,
+                              th: ({node, ...props}) => <th className="p-3 font-semibold text-slate-900" {...props} />,
+                              td: ({node, ...props}) => <td className="p-3 text-slate-700" {...props} />,
+                              blockquote: ({node, ...props}) => (
+                                <blockquote className="border-l-4 border-indigo-500 pl-3.5 py-1 italic text-slate-600 bg-indigo-50/40 rounded-r-lg my-2" {...props} />
+                              )
+                            }}
+                          >
+                            {m.content}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        isLoading && idx === messages.length - 1 && (
+                          <span className="flex items-center gap-2 text-[#6B7280]">
+                            <Loader2 className="w-4 h-4 animate-spin text-[#4F46E5]" />
+                            Searching vector database and generating structured answer...
+                          </span>
+                        )
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
